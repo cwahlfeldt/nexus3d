@@ -4,7 +4,7 @@
 CC = gcc
 CXX = g++
 AR = ar
-CFLAGS = -std=c11 -Wall -Wextra -pedantic -O2 -fPIC -I./include -I./lib/SDL/include -I./lib/cglm/include -I./lib/flecs/distr
+CFLAGS = -std=c11 -Wall -Wextra -pedantic -O2 -fPIC -I./include -I./lib/SDL/include -I./lib/cglm/include -I./lib/flecs/distr -Wno-unused-parameter -Wno-incompatible-pointer-types-discards-qualifiers -Wno-incompatible-pointer-types
 CXXFLAGS = -std=c++11 -Wall -Wextra -pedantic -O2 -fPIC -I./include -I./lib/SDL/include -I./lib/cglm/include -I./lib/flecs/distr
 LDFLAGS = -L./lib -lSDL3 -lcglm -lflecs -lm
 
