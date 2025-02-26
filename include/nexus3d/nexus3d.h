@@ -8,14 +8,21 @@
 
 #include <stdbool.h>
 
-/* Core system includes */
-#include "nexus3d/core/engine.h"
+/* Core system includes (in order of dependency) */
 #include "nexus3d/core/window.h"
-#include "nexus3d/core/time.h"
 #include "nexus3d/core/config.h"
-
-/* Renderer includes */
+#include "nexus3d/renderer/camera.h"
+#include "nexus3d/renderer/mesh.h"
+#include "nexus3d/renderer/shader.h"
+#include "nexus3d/renderer/texture.h"
 #include "nexus3d/renderer/renderer.h"
+#include "nexus3d/input/input.h"
+#include "nexus3d/audio/audio.h"
+#include "nexus3d/physics/physics.h"
+#include "nexus3d/core/engine.h"
+#include "nexus3d/core/time.h"
+
+/* Additional renderer includes */
 #include "nexus3d/renderer/camera.h"
 #include "nexus3d/renderer/mesh.h"
 #include "nexus3d/renderer/material.h"

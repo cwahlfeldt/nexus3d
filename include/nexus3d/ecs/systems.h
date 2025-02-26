@@ -12,15 +12,15 @@
 /**
  * Core system phases
  */
-extern ECS_TAG_DECLARE(NexusPhaseInit);        /* Initialization phase */
-extern ECS_TAG_DECLARE(NexusPhaseInput);       /* Input processing phase */
-extern ECS_TAG_DECLARE(NexusPhasePhysics);     /* Physics update phase */
-extern ECS_TAG_DECLARE(NexusPhaseLogic);       /* Game logic phase */
-extern ECS_TAG_DECLARE(NexusPhaseAnimation);   /* Animation phase */
-extern ECS_TAG_DECLARE(NexusPhasePreRender);   /* Pre-render phase */
-extern ECS_TAG_DECLARE(NexusPhaseRender);      /* Render phase */
-extern ECS_TAG_DECLARE(NexusPhasePostRender);  /* Post-render phase */
-extern ECS_TAG_DECLARE(NexusPhaseCleanup);     /* Cleanup phase */
+extern ecs_entity_t NexusPhaseInit;        /* Initialization phase */
+extern ecs_entity_t NexusPhaseInput;       /* Input processing phase */
+extern ecs_entity_t NexusPhasePhysics;     /* Physics update phase */
+extern ecs_entity_t NexusPhaseLogic;       /* Game logic phase */
+extern ecs_entity_t NexusPhaseAnimation;   /* Animation phase */
+extern ecs_entity_t NexusPhasePreRender;   /* Pre-render phase */
+extern ecs_entity_t NexusPhaseRender;      /* Render phase */
+extern ecs_entity_t NexusPhasePostRender;  /* Post-render phase */
+extern ecs_entity_t NexusPhaseCleanup;     /* Cleanup phase */
 
 /**
  * Core system registration

@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
         nexus_engine_update();
 
         /* Print frame count */
-        // printf("Frame: %lu\n", nexus_engine_get_frame_count());
+        printf("Frame: %lu\n", nexus_engine_get_frame_count());
     }
 
     /* Shutdown engine */

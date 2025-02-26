@@ -73,12 +73,14 @@ static SDL_GPUDevice* nexus_renderer_init_gpu(NexusWindow* window,
     SDL_GPUSwapchainComposition composition = config->composition_mode;
     SDL_GPUPresentMode present_mode = config->enable_vsync ?
         SDL_GPU_PRESENTMODE_VSYNC : SDL_GPU_PRESENTMODE_MAILBOX;
-
+// printf("FUCK");
     /* Check if the requested modes are supported */
     if (!SDL_WindowSupportsGPUSwapchainComposition(device, window->sdl_window, composition)) {
         fprintf(stderr, "Warning: Requested swapchain composition mode not supported, using default\n");
         composition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
     }
+
+
 
     if (!SDL_WindowSupportsGPUPresentMode(device, window->sdl_window, present_mode)) {
         fprintf(stderr, "Warning: Requested present mode not supported, using FIFO\n");

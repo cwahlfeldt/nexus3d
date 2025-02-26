@@ -25,7 +25,7 @@ typedef struct {
 /**
  * Window structure
  */
-typedef struct NexusWindow {
+typedef struct {
     SDL_Window* sdl_window;    /* SDL window handle */
     NexusWindowConfig config;  /* Window configuration */
     bool should_close;         /* Close flag */

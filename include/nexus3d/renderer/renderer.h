@@ -44,7 +44,7 @@ typedef struct {
 /**
  * Main renderer structure
  */
-typedef struct NexusRenderer {
+typedef struct {
     NexusRendererConfig config;    /* Renderer configuration */
     NexusRendererCaps caps;        /* Renderer capabilities */
     SDL_GPUDevice* gpu_device;     /* SDL GPU device */

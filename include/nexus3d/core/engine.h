@@ -11,12 +11,14 @@
 #include <flecs.h>
 
 /* Forward declarations */
-typedef struct NexusConfig NexusConfig;
-typedef struct NexusRenderer NexusRenderer;
-typedef struct NexusWindow NexusWindow;
-typedef struct NexusInput NexusInput;
-typedef struct NexusPhysics NexusPhysics;
-typedef struct NexusAudio NexusAudio;
+struct NexusConfig;
+struct NexusRenderer;
+struct NexusWindow;
+struct NexusInput;
+struct NexusPhysics;
+struct NexusAudio;
+
+/* Use the pointers to structs in the engine implementation */
 
 /**
  * Main engine context structure
@@ -25,17 +27,17 @@ typedef struct NexusAudio NexusAudio;
 typedef struct {
     /* Core systems */
     bool running;                      /* Engine running state */
-    NexusConfig* config;               /* Configuration settings */
-    NexusWindow* window;               /* Main window */
+    struct NexusConfig* config;        /* Configuration settings */
+    struct NexusWindow* window;        /* Main window */
     
     /* ECS world */
     ecs_world_t* world;                /* Flecs ECS world */
     
     /* Subsystems */
-    NexusRenderer* renderer;           /* Rendering system */
-    NexusInput* input;                 /* Input system */
-    NexusPhysics* physics;             /* Physics system */
-    NexusAudio* audio;                 /* Audio system */
+    struct NexusRenderer* renderer;    /* Rendering system */
+    struct NexusInput* input;          /* Input system */
+    struct NexusPhysics* physics;      /* Physics system */
+    struct NexusAudio* audio;          /* Audio system */
     
     /* Timing */
     double delta_time;                 /* Time between frames in seconds */
@@ -71,11 +73,11 @@ double nexus_engine_get_avg_frame_time(void);
 ecs_world_t* nexus_engine_get_world(void);
 
 /* Subsystem access */
-NexusRenderer* nexus_engine_get_renderer(void);
-NexusWindow* nexus_engine_get_window(void);
-NexusInput* nexus_engine_get_input(void);
-NexusPhysics* nexus_engine_get_physics(void);
-NexusAudio* nexus_engine_get_audio(void);
-NexusConfig* nexus_engine_get_config(void);
+struct NexusRenderer* nexus_engine_get_renderer(void);
+struct NexusWindow* nexus_engine_get_window(void);
+struct NexusInput* nexus_engine_get_input(void);
+struct NexusPhysics* nexus_engine_get_physics(void);
+struct NexusAudio* nexus_engine_get_audio(void);
+struct NexusConfig* nexus_engine_get_config(void);
 
 #endif /* NEXUS3D_ENGINE_H */

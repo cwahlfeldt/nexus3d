@@ -62,7 +62,7 @@ typedef struct {
 /**
  * Main physics system structure
  */
-typedef struct NexusPhysics {
+typedef struct {
     NexusPhysicsExConfig config;    /* Physics extended configuration */
     float accumulated_time;        /* Accumulated simulation time */
     ecs_world_t* world;            /* ECS world reference */

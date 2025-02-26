@@ -38,7 +38,7 @@ typedef enum {
 /**
  * Input system structure
  */
-typedef struct NexusInput {
+typedef struct {
     /* Keyboard state */
     bool keyboard_enabled;            /* Keyboard input enabled flag */
     bool keys_down[SDL_SCANCODE_COUNT];  /* Current key state (true = down) */

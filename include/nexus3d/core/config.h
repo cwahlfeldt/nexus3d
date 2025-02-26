@@ -49,7 +49,7 @@ typedef struct {
 } NexusDebugConfig;
 
 /* Main configuration structure */
-typedef struct NexusConfig {
+typedef struct {
     NexusWindowConfig window;      /* Window configuration */
     NexusGraphicsConfig graphics;  /* Graphics configuration */
     NexusAudioConfig audio;        /* Audio configuration */

@@ -3,6 +3,7 @@
  * Central engine system implementation
  */
 
+#include "nexus3d/core/config.h"
 #include "nexus3d/nexus3d.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,155 +34,157 @@ static NexusRendererConfig convert_graphics_to_renderer_config(const NexusGraphi
 /**
  * Initialize the engine
  */
-bool nexus_engine_init(void) {
-    /* Prevent double initialization */
-    if (g_engine != NULL) {
-        printf("Engine already initialized!\n");
-        return false;
-    }
+ bool nexus_engine_init(void) {
+     /* Prevent double initialization */
+     if (g_engine != NULL) {
+         printf("Engine already initialized!\n");
+         return false;
+     }
 
-    /* Allocate engine structure */
-    g_engine = (NexusEngine*)malloc(sizeof(NexusEngine));
-    if (g_engine == NULL) {
-        printf("Failed to allocate memory for engine!\n");
-        return false;
-    }
+     /* Allocate engine structure */
+     g_engine = (NexusEngine*)malloc(sizeof(NexusEngine));
+     if (g_engine == NULL) {
+         printf("Failed to allocate memory for engine!\n");
+         return false;
+     }
 
-    /* Initialize engine structure */
-    memset(g_engine, 0, sizeof(NexusEngine));
-    g_engine->running = false;
-    g_engine->time_scale = 1.0;
+     /* Initialize engine structure */
+     memset(g_engine, 0, sizeof(NexusEngine));
+     g_engine->running = false;
+     g_engine->time_scale = 1.0;
 
-    /* Create configuration */
-    g_engine->config = nexus_config_create();
-    if (g_engine->config == NULL) {
-        printf("Failed to create engine configuration!\n");
-        free(g_engine);
-        g_engine = NULL;
-        return false;
-    }
+     /* Create configuration */
+     g_engine->config = nexus_config_create();
+     if (g_engine->config == NULL) {
+         printf("Failed to create engine configuration!\n");
+         free(g_engine);
+         g_engine = NULL;
+         return false;
+     }
 
-    /* Set default configuration */
-    nexus_config_set_defaults(g_engine->config);
+     /* Set default configuration */
+     nexus_config_set_defaults(g_engine->config);
 
-    /* Set a dummy display variable - helps with headless environments */
-    /* Avoid using environment variables */
+     /* Set a dummy display variable - helps with headless environments */
+     /* Avoid using environment variables */
 
-    /* Initialize SDL */
-    /* First try with all subsystems */
-    if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC) != 0) {
-        printf("Warning: Full SDL initialization failed: %s\n", SDL_GetError());
-        printf("Trying with minimal subsystems...\n");
+     /* Initialize SDL */
+     /* First try with all subsystems */
+     if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC) != 0) {
+         printf("Warning: Full SDL initialization failed: %s\n", SDL_GetError());
+         printf("Trying with minimal subsystems...\n");
 
-        /* Try again with just VIDEO */
-        if (!SDL_Init(SDL_INIT_VIDEO) != 0) {
-            printf("Failed to initialize SDL minimal mode: %s\n", SDL_GetError());
-            nexus_config_destroy(g_engine->config);
-            free(g_engine);
-            g_engine = NULL;
-            return false;
-        }
+         /* Try again with just VIDEO */
+         if (!SDL_Init(SDL_INIT_VIDEO) != 0) {
+             printf("Failed to initialize SDL minimal mode: %s\n", SDL_GetError());
+             nexus_config_destroy(g_engine->config);
+             free(g_engine);
+             g_engine = NULL;
+             return false;
+         }
 
-        printf("SDL initialized in minimal mode\n");
-    }
+         printf("SDL initialized in minimal mode\n");
+     }
 
-    /* Create main window */
-    g_engine->window = nexus_window_create(&g_engine->config->window);
-    if (g_engine->window == NULL) {
-        /* Attempt to continue without a window in headless environments */
-        printf("Warning: Failed to create window. Running in headless mode.\n");
-        /*
-         * At this point we could create a dummy window struct if needed
-         * For now, we'll try to proceed without a window
-         */
-    }
+     /* Create main window */
+     g_engine->window = nexus_window_create(&g_engine->config);
+     if (g_engine->window == NULL) {
+         /* Attempt to continue without a window in headless environments */
+         printf("Warning: Failed to create window. Running in headless mode.\n");
+         /*
+          * At this point we could create a dummy window struct if needed
+          * For now, we'll try to proceed without a window
+          */
+     }
 
-    /* Initialize ECS */
-    g_engine->world = ecs_init();
-    if (g_engine->world == NULL) {
-        printf("Failed to initialize ECS!\n");
-        nexus_window_destroy(g_engine->window);
-        SDL_Quit();
-        nexus_config_destroy(g_engine->config);
-        free(g_engine);
-        g_engine = NULL;
-        return false;
-    }
+     /* Initialize ECS */
+     g_engine->world = ecs_init();
+     if (g_engine->world == NULL) {
+         printf("Failed to initialize ECS!\n");
+         nexus_window_destroy(g_engine->window);
+         SDL_Quit();
+         nexus_config_destroy(g_engine->config);
+         free(g_engine);
+         g_engine = NULL;
+         return false;
+     }
 
-    /* Initialize renderer - only if we have a window */
-    if (g_engine->window != NULL) {
-        NexusRendererConfig renderer_config = convert_graphics_to_renderer_config(&g_engine->config->graphics);
-        g_engine->renderer = nexus_renderer_create(g_engine->window, &renderer_config);
-        if (g_engine->renderer == NULL) {
-            printf("Warning: Failed to create renderer. Visual output will be disabled.\n");
-            /* Continue execution without a renderer */
-        }
-    } else {
-        printf("Running without a renderer (headless mode).\n");
-        g_engine->renderer = NULL;
-    }
+     /* Initialize renderer - only if we have a window */
+     if (g_engine->window != NULL) {
+         NexusRendererConfig renderer_config = convert_graphics_to_renderer_config(&g_engine->config);
+         g_engine->renderer = nexus_renderer_create(g_engine->window, &renderer_config);
+         if (g_engine->renderer == NULL) {
+             printf("Warning: Failed to create renderer. Visual output will be disabled.\n");
+             /* Continue execution without a renderer */
+         }
+     } else {
+         printf("Running without a renderer (headless mode).\n");
+         g_engine->renderer = NULL;
+     }
 
-    /* Initialize input system */
-    g_engine->input = nexus_input_create();
-    if (g_engine->input == NULL) {
-        printf("Failed to create input system!\n");
-        nexus_renderer_destroy(g_engine->renderer);
-        ecs_fini(g_engine->world);
-        nexus_window_destroy(g_engine->window);
-        SDL_Quit();
-        nexus_config_destroy(g_engine->config);
-        free(g_engine);
-        g_engine = NULL;
-        return false;
-    }
+     /* Initialize input system */
+     g_engine->input = nexus_input_create();
+     if (g_engine->input == NULL) {
+         printf("Failed to create input system!\n");
+         nexus_renderer_destroy(g_engine->renderer);
+         ecs_fini(g_engine->world);
+         nexus_window_destroy(g_engine->window);
+         SDL_Quit();
+         nexus_config_destroy(g_engine->config);
+         free(g_engine);
+         g_engine = NULL;
+         return false;
+     }
 
-    /* Initialize physics system */
-    g_engine->physics = nexus_physics_create(g_engine->world);
-    if (g_engine->physics == NULL) {
-        printf("Failed to create physics system!\n");
-        nexus_input_destroy(g_engine->input);
-        nexus_renderer_destroy(g_engine->renderer);
-        ecs_fini(g_engine->world);
-        nexus_window_destroy(g_engine->window);
-        SDL_Quit();
-        nexus_config_destroy(g_engine->config);
-        free(g_engine);
-        g_engine = NULL;
-        return false;
-    }
+     /* Initialize physics system */
+     g_engine->physics = nexus_physics_create(g_engine->world);
+     if (g_engine->physics == NULL) {
+         printf("Failed to create physics system!\n");
+         nexus_input_destroy(g_engine->input);
+         nexus_renderer_destroy(g_engine->renderer);
+         ecs_fini(g_engine->world);
+         nexus_window_destroy(g_engine->window);
+         SDL_Quit();
+         nexus_config_destroy(g_engine->config);
+         free(g_engine);
+         g_engine = NULL;
+         return false;
+     }
 
-    /* Initialize audio system */
-    g_engine->audio = nexus_audio_create(&g_engine->config->audio);
-    if (g_engine->audio == NULL) {
-        printf("Failed to create audio system!\n");
-        nexus_physics_destroy(g_engine->physics);
-        nexus_input_destroy(g_engine->input);
-        nexus_renderer_destroy(g_engine->renderer);
-        ecs_fini(g_engine->world);
-        nexus_window_destroy(g_engine->window);
-        SDL_Quit();
-        nexus_config_destroy(g_engine->config);
-        free(g_engine);
-        g_engine = NULL;
-        return false;
-    }
+     /* Initialize audio system */
+     g_engine->audio = nexus_audio_create(&g_engine->config);
+     if (g_engine->audio == NULL) {
+         printf("Failed to create audio system!\n");
+         nexus_physics_destroy(g_engine->physics);
+         nexus_input_destroy(g_engine->input);
+         nexus_renderer_destroy(g_engine->renderer);
+         ecs_fini(g_engine->world);
+         nexus_window_destroy(g_engine->window);
+         SDL_Quit();
+         nexus_config_destroy(g_engine->config);
+         free(g_engine);
+         g_engine = NULL;
+         return false;
+     }
 
-    /* Register ECS components */
-    nexus_ecs_register_components(g_engine->world);
+     /* Register ECS components */
+     nexus_ecs_register_components(g_engine->world);
 
-    /* Register ECS systems - continue even if this fails */
-    if (!nexus_ecs_register_systems(g_engine->world)) {
-        printf("Warning: Failed to register ECS systems. Some functionality may be limited.\n");
-        /* Continue execution without systems */
-    }
+     /* Register ECS systems */
+     if (!nexus_ecs_register_systems(g_engine->world)) {
+         printf("Warning: Failed to register ECS systems. Some functionality may be limited.\n");
+         /* Continue execution without systems */
+     } else {
+         printf("Successfully registered all ECS components and systems\n");
+     }
 
-    /* Engine is now running */
-    g_engine->running = true;
+     /* Engine is now running */
+     g_engine->running = true;
 
-    printf("Nexus3D Engine initialized successfully!\n");
+     printf("Nexus3D Engine initialized successfully!\n");
 
-    return true;
-}
+     return true;
+ }
 
 /**
  * Shutdown the engine
@@ -291,18 +294,15 @@ void nexus_engine_update(void) {
 
     /* Update input system */
     nexus_input_update(g_engine->input);
-
-    // printf("input running...\n"); // this works here but not after ecs_progress
-
-    /* Update ECS BUSTED AS FUCK */
+    /* Update ECS world - this processes all registered systems */
     ecs_progress(g_engine->world, g_engine->delta_time * g_engine->time_scale);
+    // printf("FUCK\n");
 
-    /* Update physics system */
-    // printf("physics running...\n");
+    /*
+     * Note: Most systems are now handled by the ECS, but we still need to manually update
+     * these subsystems for functionality that isn't yet integrated into the ECS architecture
+     */
     nexus_physics_update(g_engine->physics, g_engine->delta_time * g_engine->time_scale);
-
-    /* Update audio system */
-    // printf("audio running...\n");
     nexus_audio_update(g_engine->audio, g_engine->delta_time * g_engine->time_scale);
 
     /* Render frame - only if we have a renderer */
@@ -412,7 +412,7 @@ ecs_world_t* nexus_engine_get_world(void) {
 /**
  * Get the renderer
  */
-NexusRenderer* nexus_engine_get_renderer(void) {
+struct NexusRenderer* nexus_engine_get_renderer(void) {
     if (g_engine == NULL) {
         return NULL;
     }
@@ -422,7 +422,7 @@ NexusRenderer* nexus_engine_get_renderer(void) {
 /**
  * Get the window
  */
-NexusWindow* nexus_engine_get_window(void) {
+struct NexusWindow* nexus_engine_get_window(void) {
     if (g_engine == NULL) {
         return NULL;
     }
@@ -432,7 +432,7 @@ NexusWindow* nexus_engine_get_window(void) {
 /**
  * Get the input system
  */
-NexusInput* nexus_engine_get_input(void) {
+struct NexusInput* nexus_engine_get_input(void) {
     if (g_engine == NULL) {
         return NULL;
     }
@@ -442,7 +442,7 @@ NexusInput* nexus_engine_get_input(void) {
 /**
  * Get the physics system
  */
-NexusPhysics* nexus_engine_get_physics(void) {
+struct NexusPhysics* nexus_engine_get_physics(void) {
     if (g_engine == NULL) {
         return NULL;
     }
@@ -452,7 +452,7 @@ NexusPhysics* nexus_engine_get_physics(void) {
 /**
  * Get the audio system
  */
-NexusAudio* nexus_engine_get_audio(void) {
+struct NexusAudio* nexus_engine_get_audio(void) {
     if (g_engine == NULL) {
         return NULL;
     }
@@ -462,7 +462,7 @@ NexusAudio* nexus_engine_get_audio(void) {
 /**
  * Get the configuration
  */
-NexusConfig* nexus_engine_get_config(void) {
+struct NexusConfig* nexus_engine_get_config(void) {
     if (g_engine == NULL) {
         return NULL;
     }

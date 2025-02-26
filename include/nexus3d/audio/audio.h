@@ -27,7 +27,7 @@ typedef enum {
 /**
  * Sound structure
  */
-typedef struct NexusSound {
+typedef struct {
     Uint8* buffer;           /* Sound data buffer */
     Uint32 length;           /* Buffer length in bytes */
     SDL_AudioSpec spec;      /* Audio specification */
@@ -37,7 +37,7 @@ typedef struct NexusSound {
 /**
  * Sound source structure
  */
-typedef struct NexusSoundSource {
+typedef struct {
     NexusSound* sound;       /* Sound data */
     bool is_playing;         /* Playing flag */
     bool is_looping;         /* Looping flag */
@@ -68,7 +68,7 @@ typedef struct NexusSoundSource {
 /**
  * Main audio system structure
  */
-typedef struct NexusAudio {
+typedef struct {
     NexusAudioConfig config;                         /* Audio configuration */
     SDL_AudioDeviceID audio_device;                  /* SDL audio device */
     NexusSoundSource sources[NEXUS_MAX_SOUND_SOURCES]; /* Sound sources array */
