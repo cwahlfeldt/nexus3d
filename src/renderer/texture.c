@@ -4,7 +4,7 @@
  */
 
  #include "nexus3d/renderer/texture.h"
-#include "SDL3/SDL_gpu.h"
+#include <SDL3/SDL.h>
  #include "nexus3d/utils/logger.h"
  #include <stdio.h>
  #include <stdlib.h>
