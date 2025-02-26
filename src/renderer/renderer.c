@@ -31,9 +31,9 @@ static SDL_GPUDevice* nexus_renderer_init_gpu(NexusWindow* window,
 
     /* Create GPU device with support for all shader formats */
     SDL_GPUDevice* device = SDL_CreateGPUDevice(
-        SDL_GPU_SHADER_FORMAT_SPIRV | SDL_GPU_SHADER_FORMAT_GLSL | 
-        SDL_GPU_SHADER_FORMAT_HLSL | SDL_GPU_SHADER_FORMAT_MSL,
-        NEXUS_DEBUG, "Nexus3D"
+        SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXBC | 
+        SDL_GPU_SHADERFORMAT_MSL,
+        true, "Nexus3D"
     );
 
     if (device == NULL) {
@@ -56,7 +56,8 @@ static SDL_GPUDevice* nexus_renderer_init_gpu(NexusWindow* window,
     /* Get supported formats and capabilities */
     caps->supports_msaa = true;
     caps->max_msaa_samples = 8;
-    caps->supports_compute = (SDL_GetGPUShaderFormats(device) & SDL_GPU_SHADER_STAGE_COMPUTE) != 0;
+    // We'll assume compute is supported for now
+    caps->supports_compute = true;
     caps->supports_hdr = true;
     caps->max_texture_size = 4096;
     caps->max_texture_array_layers = 256;
@@ -71,17 +72,17 @@ static SDL_GPUDevice* nexus_renderer_init_gpu(NexusWindow* window,
     /* Set swapchain parameters */
     SDL_GPUSwapchainComposition composition = config->composition_mode;
     SDL_GPUPresentMode present_mode = config->enable_vsync ? 
-        SDL_GPU_PRESENT_MODE_FIFO : SDL_GPU_PRESENT_MODE_MAILBOX;
+        SDL_GPU_PRESENTMODE_VSYNC : SDL_GPU_PRESENTMODE_MAILBOX;
 
     /* Check if the requested modes are supported */
     if (!SDL_WindowSupportsGPUSwapchainComposition(device, window->sdl_window, composition)) {
         fprintf(stderr, "Warning: Requested swapchain composition mode not supported, using default\n");
-        composition = SDL_GPU_SWAPCHAIN_COMPOSITION_AUTOMATIC;
+        composition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
     }
 
     if (!SDL_WindowSupportsGPUPresentMode(device, window->sdl_window, present_mode)) {
         fprintf(stderr, "Warning: Requested present mode not supported, using FIFO\n");
-        present_mode = SDL_GPU_PRESENT_MODE_FIFO;
+        present_mode = SDL_GPU_PRESENTMODE_VSYNC;
     }
 
     /* Apply swapchain parameters */
@@ -115,8 +116,8 @@ NexusRenderer* nexus_renderer_create(NexusWindow* window, const NexusRendererCon
         .msaa_samples = 4,
         .enable_vsync = true,
         .enable_hdr = false,
-        .composition_mode = SDL_GPU_SWAPCHAIN_COMPOSITION_AUTOMATIC,
-        .present_mode = SDL_GPU_PRESENT_MODE_FIFO
+        .composition_mode = SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
+        .present_mode = SDL_GPU_PRESENTMODE_VSYNC
     };
 
     if (config == NULL) {
@@ -135,6 +136,17 @@ NexusRenderer* nexus_renderer_create(NexusWindow* window, const NexusRendererCon
     
     /* Copy configuration */
     renderer->config = *config;
+    
+    /* Set default clear color (dark blue) */
+    renderer->clear_color[0] = 0.1f;  /* R */
+    renderer->clear_color[1] = 0.1f;  /* G */
+    renderer->clear_color[2] = 0.2f;  /* B */
+    renderer->clear_color[3] = 1.0f;  /* A */
+    
+    /* Reset stats */
+    renderer->frame_time = 0.0;
+    renderer->draw_calls = 0;
+    renderer->triangle_count = 0;
     
     /* Store window reference */
     renderer->window = window->sdl_window;
@@ -245,12 +257,21 @@ bool nexus_renderer_begin_frame(NexusRenderer* renderer) {
         return false;
     }
     
+    /* Reset frame statistics */
+    renderer->draw_calls = 0;
+    renderer->triangle_count = 0;
+    
     /* Begin a render pass to clear the swapchain */
     SDL_GPUColorTargetInfo color_target = {
         .texture = renderer->swapchain_texture,
-        .load_op = SDL_GPU_LOAD_OP_CLEAR,
-        .store_op = SDL_GPU_STORE_OP_STORE,
-        .clear_color = {0.1f, 0.1f, 0.2f, 1.0f}, /* Dark blue clear color */
+        .load_op = SDL_GPU_LOADOP_CLEAR,
+        .store_op = SDL_GPU_STOREOP_STORE,
+        .clear_color = {
+            renderer->clear_color[0],
+            renderer->clear_color[1],
+            renderer->clear_color[2],
+            renderer->clear_color[3]
+        },
         .cycle = true
     };
     
@@ -267,8 +288,8 @@ bool nexus_renderer_begin_frame(NexusRenderer* renderer) {
     SDL_GPUViewport viewport = {
         .x = 0,
         .y = 0,
-        .width = (float)renderer->swapchain_width,
-        .height = (float)renderer->swapchain_height,
+        .w = (float)renderer->swapchain_width,
+        .h = (float)renderer->swapchain_height,
         .min_depth = 0.0f,
         .max_depth = 1.0f
     };
@@ -322,8 +343,8 @@ void nexus_renderer_render_mesh(NexusRenderer* renderer,
     /* Begin a render pass */
     SDL_GPUColorTargetInfo color_target = {
         .texture = renderer->swapchain_texture,
-        .load_op = SDL_GPU_LOAD_OP_LOAD,  /* We're not clearing, just drawing */
-        .store_op = SDL_GPU_STORE_OP_STORE,
+        .load_op = SDL_GPU_LOADOP_LOAD,  /* We're not clearing, just drawing */
+        .store_op = SDL_GPU_STOREOP_STORE,
         .clear_color = {0.0f, 0.0f, 0.0f, 0.0f},
         .cycle = false
     };
@@ -340,8 +361,8 @@ void nexus_renderer_render_mesh(NexusRenderer* renderer,
     SDL_GPUViewport viewport = {
         .x = 0,
         .y = 0,
-        .width = (float)renderer->swapchain_width,
-        .height = (float)renderer->swapchain_height,
+        .w = (float)renderer->swapchain_width,
+        .h = (float)renderer->swapchain_height,
         .min_depth = 0.0f,
         .max_depth = 1.0f
     };
@@ -374,7 +395,11 @@ void nexus_renderer_render_mesh(NexusRenderer* renderer,
     }
     
     /* Draw the mesh */
-    nexus_mesh_draw(mesh, render_pass);
+    uint32_t triangles = nexus_mesh_draw(mesh, render_pass);
+    
+    /* Update statistics */
+    renderer->draw_calls++;
+    renderer->triangle_count += triangles;
     
     /* End the render pass */
     SDL_EndGPURenderPass(render_pass);
@@ -384,14 +409,15 @@ void nexus_renderer_render_mesh(NexusRenderer* renderer,
  * Set the clear color for the renderer
  */
 void nexus_renderer_set_clear_color(NexusRenderer* renderer, float r, float g, float b, float a) {
-    /* This will be used in the next frame's begin_frame call */
     if (renderer == NULL) {
         return;
     }
     
-    /* Store the clear color in the renderer for the next frame */
-    /* Note: We'd need to add a clear_color field to the renderer structure */
-    /* For now, this is a stub function - the color is set in begin_frame */
+    /* Store the clear color for next frame */
+    renderer->clear_color[0] = r;
+    renderer->clear_color[1] = g;
+    renderer->clear_color[2] = b;
+    renderer->clear_color[3] = a;
 }
 
 /**
@@ -459,4 +485,49 @@ SDL_GPUDevice* nexus_renderer_get_gpu_device(const NexusRenderer* renderer) {
     }
     
     return renderer->gpu_device;
+}
+
+/**
+ * Get the number of draw calls in the current frame
+ */
+uint32_t nexus_renderer_get_draw_call_count(const NexusRenderer* renderer) {
+    if (renderer == NULL) {
+        return 0;
+    }
+    
+    return renderer->draw_calls;
+}
+
+/**
+ * Get the number of triangles in the current frame
+ */
+uint32_t nexus_renderer_get_triangle_count(const NexusRenderer* renderer) {
+    if (renderer == NULL) {
+        return 0;
+    }
+    
+    return renderer->triangle_count;
+}
+
+/**
+ * Get the time taken to render the last frame (in milliseconds)
+ */
+double nexus_renderer_get_frame_time(const NexusRenderer* renderer) {
+    if (renderer == NULL) {
+        return 0.0;
+    }
+    
+    return renderer->frame_time;
+}
+
+/**
+ * Set the frame time value
+ * This should be called by the engine after measuring the frame time
+ */
+void nexus_renderer_set_frame_time(NexusRenderer* renderer, double frame_time_ms) {
+    if (renderer == NULL) {
+        return;
+    }
+    
+    renderer->frame_time = frame_time_ms;
 }

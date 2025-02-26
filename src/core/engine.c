@@ -7,9 +7,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <SDL3/SDL_init.h>
 
 /* Global engine instance */
 NexusEngine* g_engine = NULL;
+
+/**
+ * Helper function to convert from NexusGraphicsConfig to NexusRendererConfig
+ */
+static NexusRendererConfig convert_graphics_to_renderer_config(const NexusGraphicsConfig* graphics) {
+    NexusRendererConfig renderer_config = {
+        .enable_shadows = graphics->enable_shadows,
+        .enable_msaa = graphics->enable_msaa,
+        .msaa_samples = graphics->msaa_samples,
+        .enable_vsync = graphics->enable_vsync,
+        .enable_hdr = graphics->enable_hdr,
+        .composition_mode = SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
+        .present_mode = graphics->enable_vsync ? SDL_GPU_PRESENTMODE_VSYNC : SDL_GPU_PRESENTMODE_MAILBOX
+    };
+    
+    return renderer_config;
+}
 
 /**
  * Initialize the engine
@@ -46,7 +64,7 @@ bool nexus_engine_init(void) {
     nexus_config_set_defaults(g_engine->config);
 
     /* Initialize SDL */
-    if (!SDL_Init(SDL_INIT_EVERYTHING)) {
+    if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC) != 0) {
         printf("Failed to initialize SDL: %s\n", SDL_GetError());
         nexus_config_destroy(g_engine->config);
         free(g_engine);
@@ -78,7 +96,8 @@ bool nexus_engine_init(void) {
     }
 
     /* Initialize renderer */
-    g_engine->renderer = nexus_renderer_create(g_engine->window, &g_engine->config->graphics);
+    NexusRendererConfig renderer_config = convert_graphics_to_renderer_config(&g_engine->config->graphics);
+    g_engine->renderer = nexus_renderer_create(g_engine->window, &renderer_config);
     if (g_engine->renderer == NULL) {
         printf("Failed to create renderer!\n");
         ecs_fini(g_engine->world);
@@ -222,6 +241,9 @@ void nexus_engine_update(void) {
     if (g_engine == NULL || !g_engine->running) {
         return;
     }
+    
+    /* Start frame timing */
+    uint64_t frame_start_time = SDL_GetTicks();
 
     /* Process window events */
     SDL_Event event;
@@ -271,6 +293,22 @@ void nexus_engine_update(void) {
 
     /* Update frame counter */
     g_engine->frame_count++;
+    
+    /* Calculate frame time */
+    uint64_t frame_end_time = SDL_GetTicks();
+    double frame_time_ms = (double)(frame_end_time - frame_start_time);
+    
+    /* Update delta time for next frame (convert to seconds) */
+    g_engine->delta_time = frame_time_ms / 1000.0;
+    
+    /* Update renderer statistics */
+    if (g_engine->renderer != NULL) {
+        nexus_renderer_set_frame_time(g_engine->renderer, frame_time_ms);
+    }
+    
+    /* Calculate and update performance metrics */
+    g_engine->avg_frame_time = (g_engine->avg_frame_time * 0.95) + (frame_time_ms * 0.05);
+    g_engine->fps = 1000.0 / g_engine->avg_frame_time;
 }
 
 /**
@@ -400,4 +438,24 @@ NexusConfig* nexus_engine_get_config(void) {
         return NULL;
     }
     return g_engine->config;
+}
+
+/**
+ * Get the current frames per second
+ */
+double nexus_engine_get_fps(void) {
+    if (g_engine == NULL) {
+        return 0.0;
+    }
+    return g_engine->fps;
+}
+
+/**
+ * Get the average frame time in milliseconds
+ */
+double nexus_engine_get_avg_frame_time(void) {
+    if (g_engine == NULL) {
+        return 0.0;
+    }
+    return g_engine->avg_frame_time;
 }

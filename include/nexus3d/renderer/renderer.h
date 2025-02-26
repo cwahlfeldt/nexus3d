@@ -57,9 +57,17 @@ typedef struct NexusRenderer {
     /* Command pools and buffers */
     SDL_GPUCommandBuffer* cmd_buffer; /* Current command buffer */
     
+    /* Clear color */
+    float clear_color[4];          /* RGBA clear color */
+    
     /* Resources */
     NexusShader* default_shader;   /* Default shader */
     NexusCamera* main_camera;      /* Main camera */
+    
+    /* Stats */
+    double frame_time;             /* Last frame time in ms */
+    uint32_t draw_calls;           /* Draw calls in the current frame */
+    uint32_t triangle_count;       /* Triangle count in the current frame */
 } NexusRenderer;
 
 /* Renderer functions */
@@ -74,5 +82,11 @@ NexusCamera* nexus_renderer_get_camera(const NexusRenderer* renderer);
 void nexus_renderer_resize(NexusRenderer* renderer, int width, int height);
 NexusRendererCaps nexus_renderer_get_capabilities(NexusRenderer* renderer);
 SDL_GPUDevice* nexus_renderer_get_gpu_device(const NexusRenderer* renderer);
+
+/* Statistics and debugging */
+uint32_t nexus_renderer_get_draw_call_count(const NexusRenderer* renderer);
+uint32_t nexus_renderer_get_triangle_count(const NexusRenderer* renderer);
+double nexus_renderer_get_frame_time(const NexusRenderer* renderer);
+void nexus_renderer_set_frame_time(NexusRenderer* renderer, double frame_time_ms);
 
 #endif /* NEXUS3D_RENDERER_H */

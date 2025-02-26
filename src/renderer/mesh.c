@@ -34,7 +34,7 @@ NexusMesh* nexus_mesh_create(SDL_GPUDevice* device) {
 
     /* Create transfer buffer for uploading vertex and index data */
     SDL_GPUTransferBufferCreateInfo transfer_info = {
-        .usage = SDL_GPU_TRANSFER_BUFFER_USAGE_UPLOAD,
+        .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
         .size = 1024 * 1024  /* 1MB initial size */
     };
 
@@ -107,7 +107,7 @@ bool nexus_mesh_set_vertices(NexusMesh* mesh, const NexusVertex* vertices, uint3
     /* Create vertex buffer */
     SDL_GPUBufferCreateInfo buffer_info = {
         .size = vertex_data_size,
-        .usage = SDL_GPU_BUFFER_USAGE_VERTEX | SDL_GPU_BUFFER_USAGE_TRANSFER_DST
+        .usage = SDL_GPU_BUFFERUSAGE_VERTEX
     };
 
     SDL_GPUBuffer* vertex_buffer = SDL_CreateGPUBuffer(mesh->device, &buffer_info);
@@ -196,7 +196,7 @@ bool nexus_mesh_set_indices(NexusMesh* mesh, const uint32_t* indices, uint32_t i
     /* Create index buffer */
     SDL_GPUBufferCreateInfo buffer_info = {
         .size = index_data_size,
-        .usage = SDL_GPU_BUFFER_USAGE_INDEX | SDL_GPU_BUFFER_USAGE_TRANSFER_DST
+        .usage = SDL_GPU_BUFFERUSAGE_INDEX
     };
 
     SDL_GPUBuffer* index_buffer = SDL_CreateGPUBuffer(mesh->device, &buffer_info);
@@ -260,10 +260,11 @@ bool nexus_mesh_set_indices(NexusMesh* mesh, const uint32_t* indices, uint32_t i
 
 /**
  * Draw a mesh in a render pass
+ * @return The number of triangles drawn
  */
-void nexus_mesh_draw(NexusMesh* mesh, SDL_GPURenderPass* render_pass) {
+uint32_t nexus_mesh_draw(NexusMesh* mesh, SDL_GPURenderPass* render_pass) {
     if (mesh == NULL || render_pass == NULL || mesh->vertex_buffer == NULL) {
-        return;
+        return 0;
     }
 
     /* Bind vertex buffer */
@@ -274,6 +275,8 @@ void nexus_mesh_draw(NexusMesh* mesh, SDL_GPURenderPass* render_pass) {
 
     SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
 
+    uint32_t triangle_count = 0;
+
     /* Draw the mesh */
     if (mesh->has_indices && mesh->index_buffer != NULL) {
         /* Bind index buffer */
@@ -282,14 +285,22 @@ void nexus_mesh_draw(NexusMesh* mesh, SDL_GPURenderPass* render_pass) {
             .offset = 0
         };
 
-        SDL_BindGPUIndexBuffer(render_pass, &index_binding, SDL_GPU_INDEX_ELEMENT_SIZE_32BIT);
+        SDL_BindGPUIndexBuffer(render_pass, &index_binding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
         /* Draw indexed primitives */
         SDL_DrawGPUIndexedPrimitives(render_pass, mesh->index_count, 1, 0, 0, 0);
+        
+        /* Calculate triangle count (each 3 indices = 1 triangle) */
+        triangle_count = mesh->index_count / 3;
     } else {
         /* Draw non-indexed primitives */
         SDL_DrawGPUPrimitives(render_pass, mesh->vertex_count, 1, 0, 0);
+        
+        /* Calculate triangle count (each 3 vertices = 1 triangle) */
+        triangle_count = mesh->vertex_count / 3;
     }
+    
+    return triangle_count;
 }
 
 /**
@@ -779,5 +790,149 @@ NexusMesh* nexus_mesh_create_cylinder(SDL_GPUDevice* device, float radius, float
     vertices[vertex_index].normal[0] = 0.0f;
     vertices[vertex_index].normal[1] = -1.0f;
     vertices[vertex_index].normal[2] = 0.0f;
-    vertices[vertex_index].texcoord[0]`
+    vertices[vertex_index].texcoord[0] = 0.5f;
+    vertices[vertex_index].texcoord[1] = 0.5f;
+    vertices[vertex_index].color[0] = 1.0f;
+    vertices[vertex_index].color[1] = 1.0f;
+    vertices[vertex_index].color[2] = 1.0f;
+    vertices[vertex_index].color[3] = 1.0f;
+
+    uint32_t bottom_center_index = vertex_index++;
+
+    // Generate the circles for top and bottom
+    for (uint32_t i = 0; i <= segments; i++) {
+        float ratio = (float)i / segments;
+        float angle = ratio * 2.0f * M_PI;
+        float x = cosf(angle) * radius;
+        float z = sinf(angle) * radius;
+
+        // Top circle vertex
+        vertices[vertex_index].position[0] = x;
+        vertices[vertex_index].position[1] = half_height;
+        vertices[vertex_index].position[2] = z;
+        vertices[vertex_index].normal[0] = 0.0f;
+        vertices[vertex_index].normal[1] = 1.0f;
+        vertices[vertex_index].normal[2] = 0.0f;
+        vertices[vertex_index].texcoord[0] = x / (2.0f * radius) + 0.5f;
+        vertices[vertex_index].texcoord[1] = z / (2.0f * radius) + 0.5f;
+        vertices[vertex_index].color[0] = 1.0f;
+        vertices[vertex_index].color[1] = 1.0f;
+        vertices[vertex_index].color[2] = 1.0f;
+        vertices[vertex_index].color[3] = 1.0f;
+        vertex_index++;
+
+        // Bottom circle vertex
+        vertices[vertex_index].position[0] = x;
+        vertices[vertex_index].position[1] = -half_height;
+        vertices[vertex_index].position[2] = z;
+        vertices[vertex_index].normal[0] = 0.0f;
+        vertices[vertex_index].normal[1] = -1.0f;
+        vertices[vertex_index].normal[2] = 0.0f;
+        vertices[vertex_index].texcoord[0] = x / (2.0f * radius) + 0.5f;
+        vertices[vertex_index].texcoord[1] = z / (2.0f * radius) + 0.5f;
+        vertices[vertex_index].color[0] = 1.0f;
+        vertices[vertex_index].color[1] = 1.0f;
+        vertices[vertex_index].color[2] = 1.0f;
+        vertices[vertex_index].color[3] = 1.0f;
+        vertex_index++;
+    }
+
+    // Generate the cylinder side vertices
+    uint32_t start_index = vertex_index;
+    for (uint32_t i = 0; i <= segments; i++) {
+        float ratio = (float)i / segments;
+        float angle = ratio * 2.0f * M_PI;
+        float x = cosf(angle) * radius;
+        float z = sinf(angle) * radius;
+        float nx = x / radius;
+        float nz = z / radius;
+
+        // Top side vertex
+        vertices[vertex_index].position[0] = x;
+        vertices[vertex_index].position[1] = half_height;
+        vertices[vertex_index].position[2] = z;
+        vertices[vertex_index].normal[0] = nx;
+        vertices[vertex_index].normal[1] = 0.0f;
+        vertices[vertex_index].normal[2] = nz;
+        vertices[vertex_index].texcoord[0] = ratio;
+        vertices[vertex_index].texcoord[1] = 1.0f;
+        vertices[vertex_index].color[0] = 1.0f;
+        vertices[vertex_index].color[1] = 1.0f;
+        vertices[vertex_index].color[2] = 1.0f;
+        vertices[vertex_index].color[3] = 1.0f;
+        vertex_index++;
+
+        // Bottom side vertex
+        vertices[vertex_index].position[0] = x;
+        vertices[vertex_index].position[1] = -half_height;
+        vertices[vertex_index].position[2] = z;
+        vertices[vertex_index].normal[0] = nx;
+        vertices[vertex_index].normal[1] = 0.0f;
+        vertices[vertex_index].normal[2] = nz;
+        vertices[vertex_index].texcoord[0] = ratio;
+        vertices[vertex_index].texcoord[1] = 0.0f;
+        vertices[vertex_index].color[0] = 1.0f;
+        vertices[vertex_index].color[1] = 1.0f;
+        vertices[vertex_index].color[2] = 1.0f;
+        vertices[vertex_index].color[3] = 1.0f;
+        vertex_index++;
+    }
+
+    // Generate indices
+    uint32_t index_index = 0;
+    
+    // Top circle indices
+    uint32_t top_start_index = top_center_index + 1;
+    for (uint32_t i = 0; i < segments; i++) {
+        indices[index_index++] = top_center_index;
+        indices[index_index++] = top_start_index + i;
+        indices[index_index++] = top_start_index + i + 1;
+    }
+
+    // Bottom circle indices
+    uint32_t bottom_start_index = bottom_center_index + 1;
+    for (uint32_t i = 0; i < segments; i++) {
+        indices[index_index++] = bottom_center_index;
+        indices[index_index++] = bottom_start_index + i + 1;
+        indices[index_index++] = bottom_start_index + i;
+    }
+
+    // Side indices
+    for (uint32_t i = 0; i < segments; i++) {
+        uint32_t a = start_index + i * 2;
+        uint32_t b = start_index + i * 2 + 1;
+        uint32_t c = start_index + i * 2 + 2;
+        uint32_t d = start_index + i * 2 + 3;
+
+        indices[index_index++] = a;
+        indices[index_index++] = b;
+        indices[index_index++] = c;
+
+        indices[index_index++] = c;
+        indices[index_index++] = b;
+        indices[index_index++] = d;
+    }
+
+    // Set vertices and indices
+    if (!nexus_mesh_set_vertices(mesh, vertices, vertex_count)) {
+        fprintf(stderr, "Failed to set cylinder vertices!");
+        free(vertices);
+        free(indices);
+        nexus_mesh_destroy(mesh);
+        return NULL;
+    }
+
+    if (!nexus_mesh_set_indices(mesh, indices, index_count)) {
+        fprintf(stderr, "Failed to set cylinder indices!");
+        free(vertices);
+        free(indices);
+        nexus_mesh_destroy(mesh);
+        return NULL;
+    }
+
+    // Free temporary data
+    free(vertices);
+    free(indices);
+
+    return mesh;
 }

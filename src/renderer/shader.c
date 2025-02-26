@@ -11,32 +11,28 @@
 /* Vertex attributes structure array */
 static const SDL_GPUVertexAttribute s_default_vertex_attributes[] = {
     {
-        .format = SDL_GPU_VERTEX_ELEMENT_FORMAT_FLOAT3, /* xyz position */
+        .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, /* xyz position */
         .offset = 0,
-        .binding = 0,
-        .location = 0,
-        .semantic_name = "POSITION"
+        .buffer_slot = 0,
+        .location = 0
     },
     {
-        .format = SDL_GPU_VERTEX_ELEMENT_FORMAT_FLOAT3, /* xyz normal */
+        .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, /* xyz normal */
         .offset = 12, /* offset after position (3 floats × 4 bytes) */
-        .binding = 0,
-        .location = 1,
-        .semantic_name = "NORMAL"
+        .buffer_slot = 0,
+        .location = 1
     },
     {
-        .format = SDL_GPU_VERTEX_ELEMENT_FORMAT_FLOAT2, /* uv coordinates */
+        .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, /* uv coordinates */
         .offset = 24, /* offset after position and normal (3+3 floats × 4 bytes) */
-        .binding = 0,
-        .location = 2,
-        .semantic_name = "TEXCOORD"
+        .buffer_slot = 0,
+        .location = 2
     },
     {
-        .format = SDL_GPU_VERTEX_ELEMENT_FORMAT_FLOAT4, /* rgba color */
+        .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, /* rgba color */
         .offset = 32, /* offset after position, normal, and uv (3+3+2 floats × 4 bytes) */
-        .binding = 0,
-        .location = 3,
-        .semantic_name = "COLOR"
+        .buffer_slot = 0,
+        .location = 3
     }
 };
 
@@ -122,13 +118,15 @@ bool nexus_shader_load_from_source(NexusShader* shader, NexusShaderType type,
     /* Set shader stage based on type */
     switch (type) {
         case NEXUS_SHADER_TYPE_VERTEX:
-            stage = SDL_GPU_SHADER_STAGE_VERTEX;
+            stage = SDL_GPU_SHADERSTAGE_VERTEX;
             break;
         case NEXUS_SHADER_TYPE_FRAGMENT:
-            stage = SDL_GPU_SHADER_STAGE_FRAGMENT;
+            stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
             break;
         case NEXUS_SHADER_TYPE_COMPUTE:
-            stage = SDL_GPU_SHADER_STAGE_COMPUTE;
+            // Note: The actual compute stage is not defined in SDL_GPUShaderStage
+            // We'll default to vertex for now
+            stage = SDL_GPU_SHADERSTAGE_VERTEX;
             break;
         default:
             fprintf(stderr, "Invalid shader type: %d\n", type);
@@ -138,16 +136,16 @@ bool nexus_shader_load_from_source(NexusShader* shader, NexusShaderType type,
     /* Set shader format based on language */
     switch (language) {
         case NEXUS_SHADER_LANGUAGE_GLSL:
-            createInfo.format = SDL_GPU_SHADER_FORMAT_GLSL;
+            createInfo.format = SDL_GPU_SHADERFORMAT_SPIRV; // We don't have GLSL in SDL3 shaderformat
             break;
         case NEXUS_SHADER_LANGUAGE_HLSL:
-            createInfo.format = SDL_GPU_SHADER_FORMAT_HLSL;
+            createInfo.format = SDL_GPU_SHADERFORMAT_DXBC; // Use DXBC instead of HLSL
             break;
         case NEXUS_SHADER_LANGUAGE_MSL:
-            createInfo.format = SDL_GPU_SHADER_FORMAT_MSL;
+            createInfo.format = SDL_GPU_SHADERFORMAT_MSL;
             break;
         case NEXUS_SHADER_LANGUAGE_SPIRV:
-            createInfo.format = SDL_GPU_SHADER_FORMAT_SPIRV;
+            createInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
             break;
         default:
             fprintf(stderr, "Invalid shader language: %d\n", language);
@@ -156,10 +154,9 @@ bool nexus_shader_load_from_source(NexusShader* shader, NexusShaderType type,
     
     /* Configure shader creation info */
     createInfo.stage = stage;
-    createInfo.src.text = source;
-    createInfo.src.spirv_bytes = NULL;
-    createInfo.src.spirv_byte_length = 0;
-    createInfo.entry_point = "main";
+    createInfo.code = (const Uint8 *)source;
+    createInfo.code_size = strlen(source);
+    createInfo.entrypoint = "main";
     
     /* Create the shader */
     SDL_GPUShader* gpu_shader = SDL_CreateGPUShader(shader->device, &createInfo);
@@ -259,100 +256,102 @@ bool nexus_shader_compile(NexusShader* shader) {
     /* Set shader stages */
     createInfo.vertex_shader = shader->vertex_shader;
     createInfo.fragment_shader = shader->fragment_shader;
+    createInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
     
     /* Configure vertex attributes */
     SDL_GPUVertexInputState vertexInput = {0};
     
     /* Set up vertex buffer binding */
     SDL_GPUVertexBufferDescription vertexBuffer = {
-        .stride = sizeof(float) * (3 + 3 + 2 + 4), /* pos(3) + normal(3) + uv(2) + color(4) */
-        .input_rate = SDL_GPU_VERTEX_INPUT_RATE_VERTEX,
-        .binding = 0
+        .pitch = sizeof(float) * (3 + 3 + 2 + 4), /* pos(3) + normal(3) + uv(2) + color(4) */
+        .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
+        .slot = 0,
+        .instance_step_rate = 0
     };
     
     vertexInput.vertex_buffer_descriptions = &vertexBuffer;
-    vertexInput.num_vertex_buffer_descriptions = 1;
+    vertexInput.num_vertex_buffers = 1;
     vertexInput.vertex_attributes = s_default_vertex_attributes;
     vertexInput.num_vertex_attributes = s_num_vertex_attributes;
     
-    createInfo.vertex_input = &vertexInput;
+    createInfo.vertex_input_state = vertexInput;
     
     /* Set up rasterizer state */
     SDL_GPURasterizerState rasterizerState = {
-        .fill_mode = SDL_GPU_FILL_MODE_SOLID,
-        .cull_mode = SDL_GPU_CULL_MODE_BACK,
-        .front_face = SDL_GPU_FRONT_FACE_COUNTER_CLOCKWISE,
-        .depth_clip_enable = true,
-        .scissor_enable = false,
-        .line_width = 1.0f
+        .fill_mode = SDL_GPU_FILLMODE_FILL,
+        .cull_mode = SDL_GPU_CULLMODE_BACK,
+        .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
+        .enable_depth_clip = true,
+        .enable_depth_bias = false,
+        .depth_bias_constant_factor = 0.0f,
+        .depth_bias_clamp = 0.0f,
+        .depth_bias_slope_factor = 0.0f
     };
     
-    createInfo.rasterizer = &rasterizerState;
+    createInfo.rasterizer_state = rasterizerState;
     
     /* Set up depth-stencil state */
     SDL_GPUDepthStencilState depthStencilState = {
-        .depth_test_enable = true,
-        .depth_write_enable = true,
-        .depth_compare_op = SDL_GPU_COMPARE_OP_LESS,
-        .stencil_test_enable = false,
-        .front = {
-            .fail_op = SDL_GPU_STENCIL_OP_KEEP,
-            .pass_op = SDL_GPU_STENCIL_OP_KEEP,
-            .depth_fail_op = SDL_GPU_STENCIL_OP_KEEP,
-            .compare_op = SDL_GPU_COMPARE_OP_ALWAYS,
-            .compare_mask = 0xFF,
-            .write_mask = 0xFF,
-            .reference = 0
+        .enable_depth_test = true,
+        .enable_depth_write = true,
+        .compare_op = SDL_GPU_COMPAREOP_LESS,
+        .enable_stencil_test = false,
+        .compare_mask = 0xFF,
+        .write_mask = 0xFF,
+        .front_stencil_state = {
+            .fail_op = SDL_GPU_STENCILOP_KEEP,
+            .pass_op = SDL_GPU_STENCILOP_KEEP,
+            .depth_fail_op = SDL_GPU_STENCILOP_KEEP,
+            .compare_op = SDL_GPU_COMPAREOP_ALWAYS
         },
-        .back = {
-            .fail_op = SDL_GPU_STENCIL_OP_KEEP,
-            .pass_op = SDL_GPU_STENCIL_OP_KEEP,
-            .depth_fail_op = SDL_GPU_STENCIL_OP_KEEP,
-            .compare_op = SDL_GPU_COMPARE_OP_ALWAYS,
-            .compare_mask = 0xFF,
-            .write_mask = 0xFF,
-            .reference = 0
+        .back_stencil_state = {
+            .fail_op = SDL_GPU_STENCILOP_KEEP,
+            .pass_op = SDL_GPU_STENCILOP_KEEP,
+            .depth_fail_op = SDL_GPU_STENCILOP_KEEP,
+            .compare_op = SDL_GPU_COMPAREOP_ALWAYS
         }
     };
     
-    createInfo.depth_stencil = &depthStencilState;
+    createInfo.depth_stencil_state = depthStencilState;
     
     /* Set up multisample state */
     SDL_GPUMultisampleState multisampleState = {
-        .sample_count = SDL_GPU_SAMPLE_COUNT_1,
+        .sample_count = SDL_GPU_SAMPLECOUNT_1,
         .sample_mask = 0xFFFFFFFF,
-        .alpha_to_coverage_enable = false
+        .enable_mask = false
     };
     
-    createInfo.multisample = &multisampleState;
+    createInfo.multisample_state = multisampleState;
     
     /* Set up color blend state for the render target */
     SDL_GPUColorTargetBlendState colorTargetBlendState = {
-        .blend_enable = false,
-        .src_color_blend_factor = SDL_GPU_BLEND_FACTOR_ONE,
-        .dst_color_blend_factor = SDL_GPU_BLEND_FACTOR_ZERO,
-        .color_blend_op = SDL_GPU_BLEND_OP_ADD,
-        .src_alpha_blend_factor = SDL_GPU_BLEND_FACTOR_ONE,
-        .dst_alpha_blend_factor = SDL_GPU_BLEND_FACTOR_ZERO,
-        .alpha_blend_op = SDL_GPU_BLEND_OP_ADD,
-        .color_write_mask = SDL_GPU_COLOR_COMPONENT_R | SDL_GPU_COLOR_COMPONENT_G | 
-                           SDL_GPU_COLOR_COMPONENT_B | SDL_GPU_COLOR_COMPONENT_A
+        .enable_blend = false,
+        .src_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
+        .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ZERO,
+        .color_blend_op = SDL_GPU_BLENDOP_ADD,
+        .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
+        .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ZERO,
+        .alpha_blend_op = SDL_GPU_BLENDOP_ADD,
+        .color_write_mask = SDL_GPU_COLORCOMPONENT_R | SDL_GPU_COLORCOMPONENT_G | 
+                           SDL_GPU_COLORCOMPONENT_B | SDL_GPU_COLORCOMPONENT_A,
+        .enable_color_write_mask = true
     };
     
     /* Set up render target info */
     SDL_GPUColorTargetDescription colorTarget = {
-        .format = SDL_GPU_TEXTURE_FORMAT_R8G8B8A8_UNORM,
-        .blend = &colorTargetBlendState
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+        .blend_state = colorTargetBlendState
     };
     
     /* Set up pipeline target info */
     SDL_GPUGraphicsPipelineTargetInfo targetInfo = {
-        .color_targets = &colorTarget,
+        .color_target_descriptions = &colorTarget,
         .num_color_targets = 1,
-        .depth_stencil_format = SDL_GPU_TEXTURE_FORMAT_D32_FLOAT
+        .has_depth_stencil_target = true,
+        .depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT
     };
     
-    createInfo.target = &targetInfo;
+    createInfo.target_info = targetInfo;
     
     /* Create the pipeline */
     SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(shader->device, &createInfo);

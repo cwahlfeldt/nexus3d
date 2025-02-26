@@ -37,7 +37,7 @@ NexusMesh* nexus_mesh_create(SDL_GPUDevice* device);
 void nexus_mesh_destroy(NexusMesh* mesh);
 bool nexus_mesh_set_vertices(NexusMesh* mesh, const NexusVertex* vertices, uint32_t vertex_count);
 bool nexus_mesh_set_indices(NexusMesh* mesh, const uint32_t* indices, uint32_t index_count);
-void nexus_mesh_draw(NexusMesh* mesh, SDL_GPURenderPass* render_pass);
+uint32_t nexus_mesh_draw(NexusMesh* mesh, SDL_GPURenderPass* render_pass);
 
 /* Primitive creation functions */
 NexusMesh* nexus_mesh_create_plane(SDL_GPUDevice* device, float width, float height, uint32_t width_segments, uint32_t height_segments);

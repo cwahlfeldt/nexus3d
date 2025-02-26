@@ -63,6 +63,10 @@ void nexus_engine_set_time_scale(double scale);
 double nexus_engine_get_time_scale(void);
 uint64_t nexus_engine_get_frame_count(void);
 
+/* Performance metrics */
+double nexus_engine_get_fps(void);
+double nexus_engine_get_avg_frame_time(void);
+
 /* ECS access */
 ecs_world_t* nexus_engine_get_world(void);
 
