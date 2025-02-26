@@ -7,6 +7,7 @@
 #define NEXUS3D_COMPONENTS_H
 
 #include <cglm/cglm.h>
+#include <flecs.h>
 #include "nexus3d/renderer/mesh.h"
 #include "nexus3d/renderer/material.h"
 #include "nexus3d/renderer/camera.h"

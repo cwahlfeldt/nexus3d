@@ -6,6 +6,7 @@
 #ifndef NEXUS3D_INPUT_H
 #define NEXUS3D_INPUT_H
 
+#include "SDL3/SDL_scancode.h"
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 
@@ -40,11 +41,11 @@ typedef enum {
 typedef struct NexusInput {
     /* Keyboard state */
     bool keyboard_enabled;            /* Keyboard input enabled flag */
-    bool keys_down[SDL_NUM_SCANCODES];  /* Current key state (true = down) */
-    bool keys_pressed[SDL_NUM_SCANCODES]; /* Keys pressed this frame */
-    bool keys_released[SDL_NUM_SCANCODES]; /* Keys released this frame */
-    bool keys_prev[SDL_NUM_SCANCODES];  /* Previous frame key state */
-    
+    bool keys_down[SDL_SCANCODE_COUNT];  /* Current key state (true = down) */
+    bool keys_pressed[SDL_SCANCODE_COUNT]; /* Keys pressed this frame */
+    bool keys_released[SDL_SCANCODE_COUNT]; /* Keys released this frame */
+    bool keys_prev[SDL_SCANCODE_COUNT];  /* Previous frame key state */
+
     /* Mouse state */
     bool mouse_enabled;               /* Mouse input enabled flag */
     bool mouse_captured;              /* Mouse capture flag */
@@ -59,20 +60,20 @@ typedef struct NexusInput {
     float mouse_delta_y;              /* Mouse Y movement since last frame */
     float mouse_wheel_x;              /* Mouse wheel X delta */
     float mouse_wheel_y;              /* Mouse wheel Y delta */
-    
+
     /* Gamepad state */
     bool gamepad_enabled;             /* Gamepad input enabled flag */
     SDL_Gamepad* gamepads[NEXUS_MAX_GAMEPADS]; /* Gamepad handles */
     bool gamepad_connected[NEXUS_MAX_GAMEPADS]; /* Gamepad connection state */
-    float gamepad_axes[NEXUS_MAX_GAMEPADS][SDL_GAMEPAD_AXIS_MAX]; /* Gamepad axis values */
-    bool gamepad_buttons[NEXUS_MAX_GAMEPADS][SDL_GAMEPAD_BUTTON_MAX]; /* Gamepad button state */
-    bool gamepad_buttons_pressed[NEXUS_MAX_GAMEPADS][SDL_GAMEPAD_BUTTON_MAX]; /* Gamepad buttons pressed this frame */
-    bool gamepad_buttons_released[NEXUS_MAX_GAMEPADS][SDL_GAMEPAD_BUTTON_MAX]; /* Gamepad buttons released this frame */
-    bool gamepad_buttons_prev[NEXUS_MAX_GAMEPADS][SDL_GAMEPAD_BUTTON_MAX]; /* Previous frame gamepad button state */
-    
+    float gamepad_axes[NEXUS_MAX_GAMEPADS][SDL_GAMEPAD_AXIS_LEFTX]; /* Gamepad axis values */
+    bool gamepad_buttons[NEXUS_MAX_GAMEPADS][SDL_GAMEPAD_AXIS_LEFTX]; /* Gamepad button state */
+    bool gamepad_buttons_pressed[NEXUS_MAX_GAMEPADS][SDL_GAMEPAD_AXIS_LEFTX]; /* Gamepad buttons pressed this frame */
+    bool gamepad_buttons_released[NEXUS_MAX_GAMEPADS][SDL_GAMEPAD_AXIS_LEFTX]; /* Gamepad buttons released this frame */
+    bool gamepad_buttons_prev[NEXUS_MAX_GAMEPADS][SDL_GAMEPAD_AXIS_LEFTX]; /* Previous frame gamepad button state */
+
     /* Touch state */
     bool touch_enabled;               /* Touch input enabled flag */
-    
+
     /* Input mappings */
     char action_map[256][32];         /* Action name to key/button mapping */
     float input_deadzone;             /* Analog input deadzone */

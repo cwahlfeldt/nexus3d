@@ -1,0 +1,24 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-pedantic",
+      "-O2",
+      "-fPIC",
+      "-I./include",
+      "-I./lib/SDL/include",
+      "-I./lib/cglm/include",
+      "-I./lib/flecs/distr",
+      "-c",
+      "-o",
+      "build/obj/src/nexus3d.o",
+      "src/nexus3d.c"
+    ],
+    "directory": "/Users/chriswahlfeldt/code/nexus3d",
+    "file": "/Users/chriswahlfeldt/code/nexus3d/src/nexus3d.c",
+    "output": "/Users/chriswahlfeldt/code/nexus3d/build/obj/src/nexus3d.o"
+  }
+]

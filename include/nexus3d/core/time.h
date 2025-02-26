@@ -6,6 +6,7 @@
 #ifndef NEXUS3D_TIME_H
 #define NEXUS3D_TIME_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /**

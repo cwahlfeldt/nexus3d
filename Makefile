@@ -4,8 +4,8 @@
 CC = gcc
 CXX = g++
 AR = ar
-CFLAGS = -std=c11 -Wall -Wextra -pedantic -O2 -fPIC -I./include -I./lib/SDL3/include -I./lib/cglm/include -I./lib/flecs
-CXXFLAGS = -std=c++11 -Wall -Wextra -pedantic -O2 -fPIC -I./include -I./lib/SDL3/include -I./lib/cglm/include -I./lib/flecs
+CFLAGS = -std=c11 -Wall -Wextra -pedantic -O2 -fPIC -I./include -I./lib/SDL/include -I./lib/cglm/include -I./lib/flecs/distr
+CXXFLAGS = -std=c++11 -Wall -Wextra -pedantic -O2 -fPIC -I./include -I./lib/SDL/include -I./lib/cglm/include -I./lib/flecs/distr
 LDFLAGS = -L./lib -lSDL3 -lcglm -lflecs -lm
 
 # Debug flags

@@ -9,6 +9,7 @@
 #include <cglm/cglm.h>
 #include <stdbool.h>
 #include <flecs.h>
+#include "../core/config.h"
 
 /**
  * Collision shape type enumeration
@@ -48,15 +49,15 @@ typedef struct {
     float density;        /* Density kg/m^3 */
 } NexusPhysicsMaterial;
 
-/**
- * Physics system configuration
- */
-typedef struct {
-    vec3 gravity;          /* Gravity vector */
-    float fixed_timestep;  /* Fixed timestep for physics simulation */
-    int max_substeps;      /* Maximum number of physics substeps per frame */
-    bool debug_draw;       /* Debug drawing flag */
-} NexusPhysicsConfig;
+// /**
+//  * Physics system configuration
+//  */
+// typedef struct {
+//     vec3 gravity;          /* Gravity vector */
+//     float fixed_timestep;  /* Fixed timestep for physics simulation */
+//     int max_substeps;      /* Maximum number of physics substeps per frame */
+//     bool debug_draw;       /* Debug drawing flag */
+// } NexusPhysicsConfig;
 
 /**
  * Main physics system structure

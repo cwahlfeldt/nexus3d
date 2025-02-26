@@ -9,6 +9,7 @@
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 #include <cglm/cglm.h>
+#include "../core/config.h"
 
 /* Maximum number of sound sources */
 #define NEXUS_MAX_SOUND_SOURCES 128
@@ -55,14 +56,14 @@ typedef struct NexusSoundSource {
 /**
  * Audio system configuration
  */
-typedef struct {
-    int sample_rate;         /* Sample rate in Hz */
-    int channels;            /* Number of output channels */
-    int buffer_size;         /* Audio buffer size */
-    float master_volume;     /* Master volume [0.0, 1.0] */
-    float sfx_volume;        /* Sound effects volume [0.0, 1.0] */
-    float music_volume;      /* Music volume [0.0, 1.0] */
-} NexusAudioConfig;
+// typedef struct {
+//     int sample_rate;         /* Sample rate in Hz */
+//     int channels;            /* Number of output channels */
+//     int buffer_size;         /* Audio buffer size */
+//     float master_volume;     /* Master volume [0.0, 1.0] */
+//     float sfx_volume;        /* Sound effects volume [0.0, 1.0] */
+//     float music_volume;      /* Music volume [0.0, 1.0] */
+// } NexusAudioConfig;
 
 /**
  * Main audio system structure
