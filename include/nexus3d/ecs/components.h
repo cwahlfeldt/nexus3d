@@ -128,6 +128,18 @@ typedef struct { char _unused; } NexusStaticTag;      /* Static object that does
 typedef struct { char _unused; } NexusDynamicTag;     /* Dynamic object that moves */
 typedef struct { char _unused; } NexusMainCameraTag;  /* Tag for the main camera */
 
+/* Export component declarations for use in other files */
+extern ECS_COMPONENT_DECLARE(NexusPositionComponent);
+extern ECS_COMPONENT_DECLARE(NexusRotationComponent);
+extern ECS_COMPONENT_DECLARE(NexusScaleComponent);
+extern ECS_COMPONENT_DECLARE(NexusTransformComponent);
+extern ECS_COMPONENT_DECLARE(NexusRenderableComponent);
+extern ECS_COMPONENT_DECLARE(NexusCameraComponent);
+extern ECS_COMPONENT_DECLARE(NexusLightComponent);
+extern ECS_COMPONENT_DECLARE(NexusVelocityComponent);
+extern ECS_COMPONENT_DECLARE(NexusRigidBodyComponent);
+extern ECS_COMPONENT_DECLARE(NexusAudioSourceComponent);
+
 /* ECS component registration */
 void nexus_ecs_register_components(ecs_world_t* world);
 

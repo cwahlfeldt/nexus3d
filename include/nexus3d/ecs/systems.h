@@ -25,8 +25,9 @@ extern ECS_TAG_DECLARE(NexusPhaseCleanup);     /* Cleanup phase */
 /**
  * Core system registration
  * Registers all built-in systems with the ECS world
+ * @return true if successful, false if there was an error
  */
-void nexus_ecs_register_systems(ecs_world_t* world);
+bool nexus_ecs_register_systems(ecs_world_t* world);
 
 /**
  * Transform system

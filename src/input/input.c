@@ -68,15 +68,15 @@ void nexus_input_process_event(NexusInput* input, const SDL_Event* event) {
         /* Keyboard events */
         case SDL_EVENT_KEY_DOWN:
             if (input->keyboard_enabled && event->key.repeat == 0) {
-                input->keys_pressed[event->key.keysym.scancode] = true;
-                input->keys_down[event->key.keysym.scancode] = true;
+                input->keys_pressed[event->key.scancode] = true;
+                input->keys_down[event->key.scancode] = true;
             }
             break;
             
         case SDL_EVENT_KEY_UP:
             if (input->keyboard_enabled) {
-                input->keys_released[event->key.keysym.scancode] = true;
-                input->keys_down[event->key.keysym.scancode] = false;
+                input->keys_released[event->key.scancode] = true;
+                input->keys_down[event->key.scancode] = false;
             }
             break;
             
@@ -172,10 +172,10 @@ void nexus_input_process_event(NexusInput* input, const SDL_Event* event) {
                     input->gamepad_connected[event->gdevice.which] = false;
                     
                     /* Clear all gamepad state */
-                    memset(input->gamepad_axes[event->gdevice.which], 0, sizeof(float) * SDL_GAMEPAD_AXIS_MAX);
-                    memset(input->gamepad_buttons[event->gdevice.which], 0, sizeof(bool) * SDL_GAMEPAD_BUTTON_MAX);
-                    memset(input->gamepad_buttons_pressed[event->gdevice.which], 0, sizeof(bool) * SDL_GAMEPAD_BUTTON_MAX);
-                    memset(input->gamepad_buttons_released[event->gdevice.which], 0, sizeof(bool) * SDL_GAMEPAD_BUTTON_MAX);
+                    memset(input->gamepad_axes[event->gdevice.which], 0, sizeof(float) * SDL_GAMEPAD_AXIS_COUNT);
+                    memset(input->gamepad_buttons[event->gdevice.which], 0, sizeof(bool) * SDL_GAMEPAD_AXIS_COUNT);
+                    memset(input->gamepad_buttons_pressed[event->gdevice.which], 0, sizeof(bool) * SDL_GAMEPAD_AXIS_COUNT);
+                    memset(input->gamepad_buttons_released[event->gdevice.which], 0, sizeof(bool) * SDL_GAMEPAD_AXIS_COUNT);
                     
                     printf("Gamepad disconnected\n");
                 }
@@ -185,7 +185,7 @@ void nexus_input_process_event(NexusInput* input, const SDL_Event* event) {
         case SDL_EVENT_GAMEPAD_AXIS_MOTION:
             if (input->gamepad_enabled && 
                 event->gaxis.which < NEXUS_MAX_GAMEPADS && 
-                event->gaxis.axis < SDL_GAMEPAD_AXIS_MAX) {
+                event->gaxis.axis < SDL_GAMEPAD_AXIS_COUNT) {
                 
                 /* Convert to -1.0 to 1.0 range */
                 float value = (float)event->gaxis.value / 32767.0f;
@@ -206,7 +206,7 @@ void nexus_input_process_event(NexusInput* input, const SDL_Event* event) {
         case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
             if (input->gamepad_enabled && 
                 event->gbutton.which < NEXUS_MAX_GAMEPADS && 
-                event->gbutton.button < SDL_GAMEPAD_BUTTON_MAX) {
+                event->gbutton.button < SDL_GAMEPAD_BUTTON_COUNT) {
                 
                 input->gamepad_buttons_pressed[event->gbutton.which][event->gbutton.button] = true;
                 input->gamepad_buttons[event->gbutton.which][event->gbutton.button] = true;
@@ -216,7 +216,7 @@ void nexus_input_process_event(NexusInput* input, const SDL_Event* event) {
         case SDL_EVENT_GAMEPAD_BUTTON_UP:
             if (input->gamepad_enabled && 
                 event->gbutton.which < NEXUS_MAX_GAMEPADS && 
-                event->gbutton.button < SDL_GAMEPAD_BUTTON_MAX) {
+                event->gbutton.button < SDL_GAMEPAD_BUTTON_COUNT) {
                 
                 input->gamepad_buttons_released[event->gbutton.which][event->gbutton.button] = true;
                 input->gamepad_buttons[event->gbutton.which][event->gbutton.button] = false;
@@ -291,11 +291,11 @@ void nexus_input_reset_states(NexusInput* input) {
     
     /* Reset gamepad state */
     for (int i = 0; i < NEXUS_MAX_GAMEPADS; i++) {
-        memset(input->gamepad_axes[i], 0, sizeof(float) * SDL_GAMEPAD_AXIS_MAX);
-        memset(input->gamepad_buttons[i], 0, sizeof(bool) * SDL_GAMEPAD_BUTTON_MAX);
-        memset(input->gamepad_buttons_pressed[i], 0, sizeof(bool) * SDL_GAMEPAD_BUTTON_MAX);
-        memset(input->gamepad_buttons_released[i], 0, sizeof(bool) * SDL_GAMEPAD_BUTTON_MAX);
-        memset(input->gamepad_buttons_prev[i], 0, sizeof(bool) * SDL_GAMEPAD_BUTTON_MAX);
+        memset(input->gamepad_axes[i], 0, sizeof(float) * SDL_GAMEPAD_AXIS_COUNT);
+        memset(input->gamepad_buttons[i], 0, sizeof(bool) * SDL_GAMEPAD_AXIS_COUNT);
+        memset(input->gamepad_buttons_pressed[i], 0, sizeof(bool) * SDL_GAMEPAD_AXIS_COUNT);
+        memset(input->gamepad_buttons_released[i], 0, sizeof(bool) * SDL_GAMEPAD_AXIS_COUNT);
+        memset(input->gamepad_buttons_prev[i], 0, sizeof(bool) * SDL_GAMEPAD_AXIS_COUNT);
     }
 }
 
@@ -321,7 +321,7 @@ bool nexus_input_is_keyboard_enabled(const NexusInput* input) {
 
 /* Get key state */
 NexusKeyState nexus_input_get_key_state(const NexusInput* input, SDL_Scancode key) {
-    if (input == NULL || !input->keyboard_enabled || key < 0 || key >= SDL_NUM_SCANCODES) {
+    if (input == NULL || !input->keyboard_enabled || key < 0 || key >= SDL_SCANCODE_COUNT) {
         return NEXUS_KEY_UP;
     }
     
@@ -338,7 +338,7 @@ NexusKeyState nexus_input_get_key_state(const NexusInput* input, SDL_Scancode ke
 
 /* Check if key is down */
 bool nexus_input_is_key_down(const NexusInput* input, SDL_Scancode key) {
-    if (input == NULL || !input->keyboard_enabled || key < 0 || key >= SDL_NUM_SCANCODES) {
+    if (input == NULL || !input->keyboard_enabled || key < 0 || key >= SDL_SCANCODE_COUNT) {
         return false;
     }
     
@@ -347,7 +347,7 @@ bool nexus_input_is_key_down(const NexusInput* input, SDL_Scancode key) {
 
 /* Check if key was just pressed */
 bool nexus_input_is_key_pressed(const NexusInput* input, SDL_Scancode key) {
-    if (input == NULL || !input->keyboard_enabled || key < 0 || key >= SDL_NUM_SCANCODES) {
+    if (input == NULL || !input->keyboard_enabled || key < 0 || key >= SDL_SCANCODE_COUNT) {
         return false;
     }
     
@@ -356,7 +356,7 @@ bool nexus_input_is_key_pressed(const NexusInput* input, SDL_Scancode key) {
 
 /* Check if key was just released */
 bool nexus_input_is_key_released(const NexusInput* input, SDL_Scancode key) {
-    if (input == NULL || !input->keyboard_enabled || key < 0 || key >= SDL_NUM_SCANCODES) {
+    if (input == NULL || !input->keyboard_enabled || key < 0 || key >= SDL_SCANCODE_COUNT) {
         return false;
     }
     
@@ -369,7 +369,7 @@ bool nexus_input_is_any_key_down(const NexusInput* input) {
         return false;
     }
     
-    for (int i = 0; i < SDL_NUM_SCANCODES; i++) {
+    for (int i = 0; i < SDL_SCANCODE_COUNT; i++) {
         if (input->keys_down[i]) {
             return true;
         }
@@ -554,7 +554,7 @@ bool nexus_input_is_gamepad_connected(const NexusInput* input, int gamepad_index
 float nexus_input_get_gamepad_axis(const NexusInput* input, int gamepad_index, SDL_GamepadAxis axis) {
     if (input == NULL || !input->gamepad_enabled || 
         gamepad_index < 0 || gamepad_index >= NEXUS_MAX_GAMEPADS ||
-        axis < 0 || axis >= SDL_GAMEPAD_AXIS_MAX ||
+        axis < 0 || axis >= SDL_GAMEPAD_AXIS_COUNT ||
         !input->gamepad_connected[gamepad_index]) {
         return 0.0f;
     }
@@ -566,7 +566,7 @@ float nexus_input_get_gamepad_axis(const NexusInput* input, int gamepad_index, S
 NexusKeyState nexus_input_get_gamepad_button_state(const NexusInput* input, int gamepad_index, SDL_GamepadButton button) {
     if (input == NULL || !input->gamepad_enabled || 
         gamepad_index < 0 || gamepad_index >= NEXUS_MAX_GAMEPADS ||
-        button < 0 || button >= SDL_GAMEPAD_BUTTON_MAX ||
+        button < 0 || button >= SDL_GAMEPAD_BUTTON_COUNT ||
         !input->gamepad_connected[gamepad_index]) {
         return NEXUS_KEY_UP;
     }
@@ -586,7 +586,7 @@ NexusKeyState nexus_input_get_gamepad_button_state(const NexusInput* input, int 
 bool nexus_input_is_gamepad_button_down(const NexusInput* input, int gamepad_index, SDL_GamepadButton button) {
     if (input == NULL || !input->gamepad_enabled || 
         gamepad_index < 0 || gamepad_index >= NEXUS_MAX_GAMEPADS ||
-        button < 0 || button >= SDL_GAMEPAD_BUTTON_MAX ||
+        button < 0 || button >= SDL_GAMEPAD_BUTTON_COUNT ||
         !input->gamepad_connected[gamepad_index]) {
         return false;
     }
@@ -598,7 +598,7 @@ bool nexus_input_is_gamepad_button_down(const NexusInput* input, int gamepad_ind
 bool nexus_input_is_gamepad_button_pressed(const NexusInput* input, int gamepad_index, SDL_GamepadButton button) {
     if (input == NULL || !input->gamepad_enabled || 
         gamepad_index < 0 || gamepad_index >= NEXUS_MAX_GAMEPADS ||
-        button < 0 || button >= SDL_GAMEPAD_BUTTON_MAX ||
+        button < 0 || button >= SDL_GAMEPAD_BUTTON_COUNT ||
         !input->gamepad_connected[gamepad_index]) {
         return false;
     }
@@ -610,7 +610,7 @@ bool nexus_input_is_gamepad_button_pressed(const NexusInput* input, int gamepad_
 bool nexus_input_is_gamepad_button_released(const NexusInput* input, int gamepad_index, SDL_GamepadButton button) {
     if (input == NULL || !input->gamepad_enabled || 
         gamepad_index < 0 || gamepad_index >= NEXUS_MAX_GAMEPADS ||
-        button < 0 || button >= SDL_GAMEPAD_BUTTON_MAX ||
+        button < 0 || button >= SDL_GAMEPAD_BUTTON_COUNT ||
         !input->gamepad_connected[gamepad_index]) {
         return false;
     }
@@ -634,7 +634,7 @@ const char* nexus_input_get_gamepad_name(const NexusInput* input, int gamepad_in
 
 /* Map action to keyboard key */
 void nexus_input_map_action(NexusInput* input, const char* action_name, SDL_Scancode key) {
-    if (input == NULL || action_name == NULL || key < 0 || key >= SDL_NUM_SCANCODES) {
+    if (input == NULL || action_name == NULL || key < 0 || key >= SDL_SCANCODE_COUNT) {
         return;
     }
     
@@ -680,7 +680,7 @@ void nexus_input_map_action_to_mouse(NexusInput* input, const char* action_name,
 void nexus_input_map_action_to_gamepad(NexusInput* input, const char* action_name, SDL_GamepadButton button) {
     /* Implementation depends on how you want to store gamepad button mappings */
     /* This is a placeholder implementation */
-    if (input == NULL || action_name == NULL || button < 0 || button >= SDL_GAMEPAD_BUTTON_MAX) {
+    if (input == NULL || action_name == NULL || button < 0 || button >= SDL_GAMEPAD_BUTTON_COUNT) {
         return;
     }
     

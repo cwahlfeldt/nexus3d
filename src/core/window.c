@@ -59,8 +59,23 @@ NexusWindow* nexus_window_create(const NexusWindowConfig* config) {
     
     if (window->sdl_window == NULL) {
         printf("Failed to create SDL window: %s\n", SDL_GetError());
-        free(window);
-        return NULL;
+        
+        /* Try to create a hidden window as fallback for headless environments */
+        printf("Attempting to create a hidden window...\n");
+        window->sdl_window = SDL_CreateWindow(
+            window->config.title,
+            window->config.width,
+            window->config.height,
+            flags | SDL_WINDOW_HIDDEN
+        );
+        
+        if (window->sdl_window == NULL) {
+            printf("Failed to create hidden window: %s\n", SDL_GetError());
+            free(window);
+            return NULL;
+        }
+        
+        printf("Created hidden window for headless environment\n");
     }
     
     /* Store actual window size */

@@ -4,9 +4,9 @@
 CC = gcc
 CXX = g++
 AR = ar
-CFLAGS = -std=c11 -Wall -Wextra -pedantic -O2 -fPIC -I./include -I./lib/SDL/include -I./lib/cglm/include -I./lib/flecs/distr -Wno-unused-parameter -Wno-incompatible-pointer-types-discards-qualifiers -Wno-incompatible-pointer-types
-CXXFLAGS = -std=c++11 -Wall -Wextra -pedantic -O2 -fPIC -I./include -I./lib/SDL/include -I./lib/cglm/include -I./lib/flecs/distr
-LDFLAGS = -L./lib -lSDL3 -lcglm -lflecs -lm
+CFLAGS = -std=c99 -DM_PI=3.14159265358979323846 -Wall -Wextra -pedantic -O2 -fPIC -I./include -I./lib/SDL/include -I./lib/cglm/include -I./lib/flecs/distr -Wno-unused-parameter -Wno-incompatible-pointer-types-discards-qualifiers -Wno-incompatible-pointer-types -Wno-unused-variable -Wno-discarded-qualifiers
+CXXFLAGS = -std=c++11 -Wall -Wextra -pedantic -O2 -fPIC -I./include -I./lib/SDL/include -I./lib/cglm/include -I./lib/flecs/include
+LDFLAGS = -L./lib/SDL/build -L./lib/cglm/build -L./lib/flecs/build -lSDL3 -lcglm -lflecs -lm
 
 # Debug flags
 DEBUG_CFLAGS = -g -DNEXUS_DEBUG
@@ -69,11 +69,9 @@ $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-# Build examples
 $(BIN_DIR)/%: examples/%.c $(LIB_STATIC)
 	@echo "Building example: $@"
-	@$(CC) $(CFLAGS) $< -o $@ -L$(LIB_DIR) -l$(LIB_NAME) $(LDFLAGS)
-
+	@$(CC) $(CFLAGS) $< -o $@ -L$(LIB_DIR) -l$(LIB_NAME) $(LDFLAGS) -Wl,-rpath='$$ORIGIN/../lib:$$ORIGIN/../../lib/SDL/build:$$ORIGIN/../../lib/cglm/build:$$ORIGIN/../../lib/flecs/build'
 # Install
 install: all
 	@echo "Installing Nexus3D..."

@@ -3,6 +3,7 @@
  * System definitions for the Entity Component System
  */
 
+#include <flecs.h>
 #include "nexus3d/ecs/systems.h"
 #include "nexus3d/ecs/components.h"
 #include "nexus3d/math/math_utils.h"
@@ -24,75 +25,78 @@ ecs_entity_t NexusPhaseCleanup;
 /**
  * Core system registration
  * Registers all built-in systems with the ECS world
+ * @return true if successful, false if there was an error
  */
-void nexus_ecs_register_systems(ecs_world_t* world) {
-    if (world == NULL) {
-        printf("Failed to register systems: world is NULL\n");
-        return;
-    }
+ bool nexus_ecs_register_systems(ecs_world_t* world) {
+     if (world == NULL) {
+         printf("Failed to register systems: world is NULL\n");
+         return false;
+     }
 
-    /* Create phase entities */
-    NexusPhaseInit = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusPhaseInit"
-    });
-    NexusPhaseInput = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusPhaseInput"
-    });
-    NexusPhasePhysics = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusPhasePhysics"
-    });
-    NexusPhaseLogic = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusPhaseLogic"
-    });
-    NexusPhaseAnimation = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusPhaseAnimation"
-    });
-    NexusPhasePreRender = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusPhasePreRender"
-    });
-    NexusPhaseRender = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusPhaseRender"
-    });
-    NexusPhasePostRender = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusPhasePostRender"
-    });
-    NexusPhaseCleanup = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusPhaseCleanup"
-    });
+     /* Create phase entities */
+     NexusPhaseInit = ecs_entity_init(world, &(ecs_entity_desc_t){
+         .name = "NexusPhaseInit"
+     });
+     NexusPhaseInput = ecs_entity_init(world, &(ecs_entity_desc_t){
+         .name = "NexusPhaseInput"
+     });
+     NexusPhasePhysics = ecs_entity_init(world, &(ecs_entity_desc_t){
+         .name = "NexusPhasePhysics"
+     });
+     NexusPhaseLogic = ecs_entity_init(world, &(ecs_entity_desc_t){
+         .name = "NexusPhaseLogic"
+     });
+     NexusPhaseAnimation = ecs_entity_init(world, &(ecs_entity_desc_t){
+         .name = "NexusPhaseAnimation"
+     });
+     NexusPhasePreRender = ecs_entity_init(world, &(ecs_entity_desc_t){
+         .name = "NexusPhasePreRender"
+     });
+     NexusPhaseRender = ecs_entity_init(world, &(ecs_entity_desc_t){
+         .name = "NexusPhaseRender"
+     });
+     NexusPhasePostRender = ecs_entity_init(world, &(ecs_entity_desc_t){
+         .name = "NexusPhasePostRender"
+     });
+     NexusPhaseCleanup = ecs_entity_init(world, &(ecs_entity_desc_t){
+         .name = "NexusPhaseCleanup"
+     });
 
-    /* Set up pipeline with custom phases */
-    ecs_entity_t pipeline = ecs_pipeline_init(world, &(ecs_pipeline_desc_t){
-        .query.filter.terms = {
-            { .id = EcsPhase }
-        }
-    });
+     /* Set up pipeline with custom phases */
+     ecs_entity_t pipeline = ecs_pipeline_init(world, &(ecs_pipeline_desc_t){
+         .query.terms = {
+             { .id = EcsSystem }, /* First term must be EcsSystem */
+             { .id = EcsPhase, .oper = EcsOptional }
+         }
+     });
 
-    /* Set up phases in pipeline */
-    ecs_add_id(world, NexusPhaseInit, EcsPhase);
-    ecs_add_id(world, NexusPhaseInput, EcsPhase);
-    ecs_add_id(world, NexusPhasePhysics, EcsPhase);
-    ecs_add_id(world, NexusPhaseLogic, EcsPhase);
-    ecs_add_id(world, NexusPhaseAnimation, EcsPhase);
-    ecs_add_id(world, NexusPhasePreRender, EcsPhase);
-    ecs_add_id(world, NexusPhaseRender, EcsPhase);
-    ecs_add_id(world, NexusPhasePostRender, EcsPhase);
-    ecs_add_id(world, NexusPhaseCleanup, EcsPhase);
+     /* Set up phases in pipeline */
+     ecs_add_id(world, NexusPhaseInit, EcsPhase);
+     ecs_add_id(world, NexusPhaseInput, EcsPhase);
+     ecs_add_id(world, NexusPhasePhysics, EcsPhase);
+     ecs_add_id(world, NexusPhaseLogic, EcsPhase);
+     ecs_add_id(world, NexusPhaseAnimation, EcsPhase);
+     ecs_add_id(world, NexusPhasePreRender, EcsPhase);
+     ecs_add_id(world, NexusPhaseRender, EcsPhase);
+     ecs_add_id(world, NexusPhasePostRender, EcsPhase);
+     ecs_add_id(world, NexusPhaseCleanup, EcsPhase);
 
-    /* Set the pipeline order */
-    ecs_add_pair(world, NexusPhaseInput, EcsDependsOn, NexusPhaseInit);
-    ecs_add_pair(world, NexusPhasePhysics, EcsDependsOn, NexusPhaseInput);
-    ecs_add_pair(world, NexusPhaseLogic, EcsDependsOn, NexusPhasePhysics);
-    ecs_add_pair(world, NexusPhaseAnimation, EcsDependsOn, NexusPhaseLogic);
-    ecs_add_pair(world, NexusPhasePreRender, EcsDependsOn, NexusPhaseAnimation);
-    ecs_add_pair(world, NexusPhaseRender, EcsDependsOn, NexusPhasePreRender);
-    ecs_add_pair(world, NexusPhasePostRender, EcsDependsOn, NexusPhaseRender);
-    ecs_add_pair(world, NexusPhaseCleanup, EcsDependsOn, NexusPhasePostRender);
-    
-    /* Set default pipeline */
-    ecs_set_pipeline(world, pipeline);
+     /* Set the pipeline order */
+     ecs_add_pair(world, NexusPhaseInput, EcsDependsOn, NexusPhaseInit);
+     ecs_add_pair(world, NexusPhasePhysics, EcsDependsOn, NexusPhaseInput);
+     ecs_add_pair(world, NexusPhaseLogic, EcsDependsOn, NexusPhasePhysics);
+     ecs_add_pair(world, NexusPhaseAnimation, EcsDependsOn, NexusPhaseLogic);
+     ecs_add_pair(world, NexusPhasePreRender, EcsDependsOn, NexusPhaseAnimation);
+     ecs_add_pair(world, NexusPhaseRender, EcsDependsOn, NexusPhasePreRender);
+     ecs_add_pair(world, NexusPhasePostRender, EcsDependsOn, NexusPhaseRender);
+     ecs_add_pair(world, NexusPhaseCleanup, EcsDependsOn, NexusPhasePostRender);
 
-    printf("Successfully registered ECS systems\n");
-}
+     /* Set default pipeline */
+     ecs_set_pipeline(world, pipeline);
+
+     printf("Successfully registered ECS systems\n");
+     return true;
+ }
 
 /**
  * Transform system - updates transform matrices based on position, rotation, and scale

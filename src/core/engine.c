@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <SDL3/SDL_init.h>
+#include <unistd.h> /* For putenv */
 
 /* Global engine instance */
 NexusEngine* g_engine = NULL;
@@ -25,7 +26,7 @@ static NexusRendererConfig convert_graphics_to_renderer_config(const NexusGraphi
         .composition_mode = SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
         .present_mode = graphics->enable_vsync ? SDL_GPU_PRESENTMODE_VSYNC : SDL_GPU_PRESENTMODE_MAILBOX
     };
-    
+
     return renderer_config;
 }
 
@@ -63,24 +64,36 @@ bool nexus_engine_init(void) {
     /* Set default configuration */
     nexus_config_set_defaults(g_engine->config);
 
+    /* Set a dummy display variable - helps with headless environments */
+    /* Avoid using environment variables */
+
     /* Initialize SDL */
-    if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC) != 0) {
-        printf("Failed to initialize SDL: %s\n", SDL_GetError());
-        nexus_config_destroy(g_engine->config);
-        free(g_engine);
-        g_engine = NULL;
-        return false;
+    /* First try with all subsystems */
+    if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC) != 0) {
+        printf("Warning: Full SDL initialization failed: %s\n", SDL_GetError());
+        printf("Trying with minimal subsystems...\n");
+
+        /* Try again with just VIDEO */
+        if (!SDL_Init(SDL_INIT_VIDEO) != 0) {
+            printf("Failed to initialize SDL minimal mode: %s\n", SDL_GetError());
+            nexus_config_destroy(g_engine->config);
+            free(g_engine);
+            g_engine = NULL;
+            return false;
+        }
+
+        printf("SDL initialized in minimal mode\n");
     }
 
     /* Create main window */
     g_engine->window = nexus_window_create(&g_engine->config->window);
     if (g_engine->window == NULL) {
-        printf("Failed to create window!\n");
-        SDL_Quit();
-        nexus_config_destroy(g_engine->config);
-        free(g_engine);
-        g_engine = NULL;
-        return false;
+        /* Attempt to continue without a window in headless environments */
+        printf("Warning: Failed to create window. Running in headless mode.\n");
+        /*
+         * At this point we could create a dummy window struct if needed
+         * For now, we'll try to proceed without a window
+         */
     }
 
     /* Initialize ECS */
@@ -95,18 +108,17 @@ bool nexus_engine_init(void) {
         return false;
     }
 
-    /* Initialize renderer */
-    NexusRendererConfig renderer_config = convert_graphics_to_renderer_config(&g_engine->config->graphics);
-    g_engine->renderer = nexus_renderer_create(g_engine->window, &renderer_config);
-    if (g_engine->renderer == NULL) {
-        printf("Failed to create renderer!\n");
-        ecs_fini(g_engine->world);
-        nexus_window_destroy(g_engine->window);
-        SDL_Quit();
-        nexus_config_destroy(g_engine->config);
-        free(g_engine);
-        g_engine = NULL;
-        return false;
+    /* Initialize renderer - only if we have a window */
+    if (g_engine->window != NULL) {
+        NexusRendererConfig renderer_config = convert_graphics_to_renderer_config(&g_engine->config->graphics);
+        g_engine->renderer = nexus_renderer_create(g_engine->window, &renderer_config);
+        if (g_engine->renderer == NULL) {
+            printf("Warning: Failed to create renderer. Visual output will be disabled.\n");
+            /* Continue execution without a renderer */
+        }
+    } else {
+        printf("Running without a renderer (headless mode).\n");
+        g_engine->renderer = NULL;
     }
 
     /* Initialize input system */
@@ -157,14 +169,17 @@ bool nexus_engine_init(void) {
     /* Register ECS components */
     nexus_ecs_register_components(g_engine->world);
 
-    /* Register ECS systems */
-    nexus_ecs_register_systems(g_engine->world);
+    /* Register ECS systems - continue even if this fails */
+    if (!nexus_ecs_register_systems(g_engine->world)) {
+        printf("Warning: Failed to register ECS systems. Some functionality may be limited.\n");
+        /* Continue execution without systems */
+    }
 
     /* Engine is now running */
     g_engine->running = true;
 
     printf("Nexus3D Engine initialized successfully!\n");
-    
+
     return true;
 }
 
@@ -241,71 +256,85 @@ void nexus_engine_update(void) {
     if (g_engine == NULL || !g_engine->running) {
         return;
     }
-    
+
     /* Start frame timing */
     uint64_t frame_start_time = SDL_GetTicks();
 
-    /* Process window events */
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        /* Process input events */
-        nexus_input_process_event(g_engine->input, &event);
+    /* Process window events - only if we have a window */
+    if (g_engine->window != NULL) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            /* Process input events */
+            nexus_input_process_event(g_engine->input, &event);
 
-        /* Handle quit event */
-        if (event.type == SDL_EVENT_QUIT) {
+            /* Handle quit event */
+            if (event.type == SDL_EVENT_QUIT) {
+                g_engine->running = false;
+                break;
+            }
+
+            /* Handle window events */
+            if (event.type == SDL_EVENT_WINDOW_RESIZED && g_engine->renderer != NULL) {
+                /* Resize renderer */
+                nexus_renderer_resize(g_engine->renderer, event.window.data1, event.window.data2);
+            }
+        }
+
+        /* Check if window should be closed */
+        if (nexus_window_should_close(g_engine->window)) {
             g_engine->running = false;
-            break;
-        }
-
-        /* Handle window events */
-        if (event.type == SDL_EVENT_WINDOW_RESIZED) {
-            /* Resize renderer */
-            nexus_renderer_resize(g_engine->renderer, event.window.data1, event.window.data2);
+            return;
         }
     }
 
-    /* Check if window should be closed */
-    if (nexus_window_should_close(g_engine->window)) {
-        g_engine->running = false;
-        return;
-    }
+
 
     /* Update input system */
     nexus_input_update(g_engine->input);
 
-    /* Update ECS */
+    // printf("input running...\n"); // this works here but not after ecs_progress
+
+    /* Update ECS BUSTED AS FUCK */
     ecs_progress(g_engine->world, g_engine->delta_time * g_engine->time_scale);
 
     /* Update physics system */
+    // printf("physics running...\n");
     nexus_physics_update(g_engine->physics, g_engine->delta_time * g_engine->time_scale);
 
     /* Update audio system */
-    nexus_audio_update(g_engine->audio);
+    // printf("audio running...\n");
+    nexus_audio_update(g_engine->audio, g_engine->delta_time * g_engine->time_scale);
 
-    /* Render frame */
-    if (nexus_renderer_begin_frame(g_engine->renderer)) {
-        /* Rendering happens here, but is mostly handled by ECS systems */
-        nexus_renderer_end_frame(g_engine->renderer);
+    /* Render frame - only if we have a renderer */
+    // printf("rendering running...\n");
+    if (g_engine->renderer != NULL) {
+        if (nexus_renderer_begin_frame(g_engine->renderer)) {
+            /* Rendering happens here, but is mostly handled by ECS systems */
+
+            nexus_renderer_end_frame(g_engine->renderer);
+        }
     }
 
-    /* Update window */
-    nexus_window_update(g_engine->window);
+    /* Update window - only if we have a window */
+    if (g_engine->window != NULL) {
+        nexus_window_update(g_engine->window);
+    }
 
     /* Update frame counter */
     g_engine->frame_count++;
-    
+
     /* Calculate frame time */
     uint64_t frame_end_time = SDL_GetTicks();
     double frame_time_ms = (double)(frame_end_time - frame_start_time);
-    
+
     /* Update delta time for next frame (convert to seconds) */
     g_engine->delta_time = frame_time_ms / 1000.0;
-    
+
     /* Update renderer statistics */
     if (g_engine->renderer != NULL) {
         nexus_renderer_set_frame_time(g_engine->renderer, frame_time_ms);
     }
-    
+
     /* Calculate and update performance metrics */
     g_engine->avg_frame_time = (g_engine->avg_frame_time * 0.95) + (frame_time_ms * 0.05);
     g_engine->fps = 1000.0 / g_engine->avg_frame_time;

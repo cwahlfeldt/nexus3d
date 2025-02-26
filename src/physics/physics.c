@@ -86,76 +86,24 @@ NexusPhysics* nexus_physics_create(ecs_world_t* world) {
 
     /* Register ECS systems */
 
-    /* Movement system: Apply velocities to positions */
-    ecs_system(world, {
-        .entity = ecs_entity(world, {.name = "NexusPhysicsMovementSystem"}),
-        .query.filter.terms = {
-            { .id = ecs_id(NexusPositionComponent), .inout = EcsInOut },
-            { .id = ecs_id(NexusVelocityComponent), .inout = EcsIn }
-        },
-        .callback = nexus_physics_movement_system,
-        .interval = 0
-    });
+    /* Create simplified ECS systems */
+    /* Movement system only for now */
+    ecs_entity_t movement_sys = ecs_new(world);
+    
+    ecs_system_desc_t movement_desc = {0};
+    movement_desc.entity = movement_sys;
+    movement_desc.callback = nexus_physics_movement_system;
+    ecs_system_init(world, &movement_desc);
 
-    /* Gravity system: Apply gravity to velocities */
-    ecs_system(world, {
-        .entity = ecs_entity(world, {.name = "NexusPhysicsGravitySystem"}),
-        .query.filter.terms = {
-            { .id = ecs_id(NexusVelocityComponent), .inout = EcsInOut },
-            { .id = ecs_id(NexusRigidBodyComponent), .inout = EcsIn },
-            { .id = ecs_id(NexusStaticTag), .oper = EcsNot }  /* Don't apply gravity to static objects */
-        },
-        .callback = nexus_physics_gravity_system,
-        .interval = 0
-    });
+    /* Transform system */
+    ecs_entity_t transform_sys = ecs_new(world);
 
-    /* Integration system: Apply forces, update velocities */
-    ecs_system(world, {
-        .entity = ecs_entity(world, {.name = "NexusPhysicsIntegrationSystem"}),
-        .query.filter.terms = {
-            { .id = ecs_id(NexusVelocityComponent), .inout = EcsInOut },
-            { .id = ecs_id(NexusRigidBodyComponent), .inout = EcsIn },
-            { .id = ecs_id(NexusStaticTag), .oper = EcsNot }  /* Don't integrate static objects */
-        },
-        .callback = nexus_physics_integration_system,
-        .interval = 0
-    });
+    ecs_system_desc_t transform_desc = {0};
+    transform_desc.entity = transform_sys;
+    transform_desc.callback = nexus_physics_transform_update_system;
+    ecs_system_init(world, &transform_desc);
 
-    /* Collision detection and response system */
-    ecs_system(world, {
-        .entity = ecs_entity(world, {.name = "NexusPhysicsCollisionSystem"}),
-        .query.filter.terms = {
-            { .id = ecs_id(NexusPositionComponent), .inout = EcsInOut },
-            { .id = ecs_id(NexusVelocityComponent), .inout = EcsInOut },
-            { .id = ecs_id(NexusRigidBodyComponent), .inout = EcsIn }
-        },
-        .callback = nexus_physics_collision_system,
-        .interval = 0
-    });
-
-    /* Constraint system: Enforce constraints between objects */
-    ecs_system(world, {
-        .entity = ecs_entity(world, {.name = "NexusPhysicsConstraintSystem"}),
-        .query.filter.terms = {
-            { .id = ecs_id(NexusPositionComponent), .inout = EcsInOut },
-            { .id = ecs_id(NexusVelocityComponent), .inout = EcsInOut },
-            { .id = ecs_id(NexusRigidBodyComponent), .inout = EcsIn }
-        },
-        .callback = nexus_physics_constraint_system,
-        .interval = 0
-    });
-
-    /* Transform update system: Update transform matrices based on physics */
-    ecs_system(world, {
-        .entity = ecs_entity(world, {.name = "NexusPhysicsTransformUpdateSystem"}),
-        .query.filter.terms = {
-            { .id = ecs_id(NexusPositionComponent), .inout = EcsIn },
-            { .id = ecs_id(NexusRotationComponent), .inout = EcsIn },
-            { .id = ecs_id(NexusTransformComponent), .inout = EcsInOut }
-        },
-        .callback = nexus_physics_transform_update_system,
-        .interval = 0
-    });
+    /* The rest of the physics systems will be implemented later */
 
     printf("Physics system created successfully.\n");
 
@@ -489,12 +437,8 @@ bool nexus_physics_raycast(NexusPhysics* physics, const vec3 origin, const vec3 
     bool hit_found = false;
 
     /* Create a query for all rigid bodies with position */
-    ecs_query_t *query = ecs_query(physics->world, {
-        .filter.terms = {
-            { .id = ecs_id(NexusPositionComponent) },
-            { .id = ecs_id(NexusRigidBodyComponent) }
-        }
-    });
+    ecs_query_desc_t query_desc = {0};
+    ecs_query_t *query = ecs_query_init(physics->world, &query_desc);
 
     /* Iterate all potential collision candidates */
     ecs_iter_t it = ecs_query_iter(physics->world, query);

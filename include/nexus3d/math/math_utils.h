@@ -91,13 +91,20 @@ static inline void nexus_quat_from_axis_angle(versor q, float x, float y, float 
 /* Create a quaternion from Euler angles (in degrees) */
 static inline void nexus_quat_from_euler_degrees(versor q, float pitch, float yaw, float roll) {
     vec3 euler = {pitch * NEXUS_DEG_TO_RAD, yaw * NEXUS_DEG_TO_RAD, roll * NEXUS_DEG_TO_RAD};
-    glm_euler_xyz(euler, q);
+    glm_euler_xyz_quat(euler, q);
 }
 
 /* Convert a quaternion to Euler angles (in degrees) */
 static inline void nexus_quat_to_euler_degrees(const versor q, vec3 euler) {
     mat4 m;
-    glm_quat_mat4(q, m);
+    versor q_copy;
+    /* Copy quaternion to avoid const issues */
+    q_copy[0] = q[0];
+    q_copy[1] = q[1];
+    q_copy[2] = q[2];
+    q_copy[3] = q[3];
+    
+    glm_quat_mat4(q_copy, m);
     vec3 temp;
     glm_euler_angles(m, temp);
     euler[0] = temp[0] * NEXUS_RAD_TO_DEG; // Pitch
@@ -138,8 +145,7 @@ static inline void nexus_mat4_transform(mat4 m, const vec3 position, const vec3 
     glm_mat4_identity(m);
     
     // Scale
-    vec3 scale_copy;
-    glm_vec3_copy(scale, scale_copy);
+    vec3 scale_copy = {scale[0], scale[1], scale[2]};
     glm_scale(m, scale_copy);
     
     // Rotation
@@ -166,7 +172,12 @@ static inline void nexus_mat4_get_position(const mat4 m, vec3 position) {
 static inline void nexus_mat4_get_rotation(const mat4 m, versor rotation) {
     mat3 rot_mat;
     mat4 m_copy;
-    glm_mat4_copy(m, m_copy);
+    // Create a non-const copy first
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            m_copy[i][j] = m[i][j];
+        }
+    }
     glm_mat4_pick3(m_copy, rot_mat);
     glm_mat3_quat(rot_mat, rotation);
 }
@@ -232,10 +243,9 @@ static inline void nexus_ray_set(NexusRay* ray, float ox, float oy, float oz, fl
 
 /* Ray-plane intersection */
 static inline bool nexus_ray_plane_intersect(const NexusRay* ray, const vec3 plane_normal, float plane_distance, float* out_t) {
-    vec3 dir_copy, normal_copy, origin_copy;
-    glm_vec3_copy(ray->direction, dir_copy);
-    glm_vec3_copy(plane_normal, normal_copy);
-    glm_vec3_copy(ray->origin, origin_copy);
+    vec3 dir_copy = {ray->direction[0], ray->direction[1], ray->direction[2]};
+    vec3 normal_copy = {plane_normal[0], plane_normal[1], plane_normal[2]};
+    vec3 origin_copy = {ray->origin[0], ray->origin[1], ray->origin[2]};
     
     float denom = glm_vec3_dot(dir_copy, normal_copy);
     
@@ -249,16 +259,17 @@ static inline bool nexus_ray_plane_intersect(const NexusRay* ray, const vec3 pla
 
 /* Ray-sphere intersection */
 static inline bool nexus_ray_sphere_intersect(const NexusRay* ray, const vec3 center, float radius, float* out_t) {
-    vec3 oc, dir_copy, oc_copy;
-    glm_vec3_copy(ray->origin, oc);
-    glm_vec3_sub(oc, center, oc);
+    vec3 oc = {ray->origin[0], ray->origin[1], ray->origin[2]};
+    vec3 dir_copy = {ray->direction[0], ray->direction[1], ray->direction[2]};
     
-    glm_vec3_copy(ray->direction, dir_copy);
-    glm_vec3_copy(oc, oc_copy);
+    // Calculate vector from ray origin to sphere center
+    oc[0] -= center[0];
+    oc[1] -= center[1];
+    oc[2] -= center[2];
     
     float a = glm_vec3_dot(dir_copy, dir_copy);
-    float b = 2.0f * glm_vec3_dot(oc_copy, dir_copy);
-    float c = glm_vec3_dot(oc_copy, oc_copy) - radius * radius;
+    float b = 2.0f * glm_vec3_dot(oc, dir_copy);
+    float c = glm_vec3_dot(oc, oc) - radius * radius;
     
     float discriminant = b * b - 4.0f * a * c;
     

@@ -8,6 +8,18 @@
 #include <stdio.h>
 #include <string.h>
 
+/* Global component IDs - we need to make these accessible to flecs */
+ECS_COMPONENT_DECLARE(NexusPositionComponent);
+ECS_COMPONENT_DECLARE(NexusRotationComponent);
+ECS_COMPONENT_DECLARE(NexusScaleComponent);
+ECS_COMPONENT_DECLARE(NexusTransformComponent);
+ECS_COMPONENT_DECLARE(NexusRenderableComponent);
+ECS_COMPONENT_DECLARE(NexusCameraComponent);
+ECS_COMPONENT_DECLARE(NexusLightComponent);
+ECS_COMPONENT_DECLARE(NexusVelocityComponent);
+ECS_COMPONENT_DECLARE(NexusRigidBodyComponent);
+ECS_COMPONENT_DECLARE(NexusAudioSourceComponent);
+
 /* Component registration function */
 void nexus_ecs_register_components(ecs_world_t* world) {
     if (world == NULL) {
@@ -15,69 +27,22 @@ void nexus_ecs_register_components(ecs_world_t* world) {
         return;
     }
 
-    /* Register components manually */
-    ecs_entity_t pos_id = ecs_component_init(world, &(ecs_component_desc_t){
-        .entity = ecs_entity(world, {.name = "NexusPositionComponent"}),
-        .type = {.size = sizeof(NexusPositionComponent), .alignment = 4}
-    });
-    
-    ecs_entity_t rot_id = ecs_component_init(world, &(ecs_component_desc_t){
-        .entity = ecs_entity(world, {.name = "NexusRotationComponent"}),
-        .type = {.size = sizeof(NexusRotationComponent), .alignment = 4}
-    });
-    
-    ecs_entity_t scale_id = ecs_component_init(world, &(ecs_component_desc_t){
-        .entity = ecs_entity(world, {.name = "NexusScaleComponent"}),
-        .type = {.size = sizeof(NexusScaleComponent), .alignment = 4}
-    });
-    
-    ecs_entity_t transform_id = ecs_component_init(world, &(ecs_component_desc_t){
-        .entity = ecs_entity(world, {.name = "NexusTransformComponent"}),
-        .type = {.size = sizeof(NexusTransformComponent), .alignment = 4}
-    });
-
-    ecs_entity_t renderable_id = ecs_component_init(world, &(ecs_component_desc_t){
-        .entity = ecs_entity(world, {.name = "NexusRenderableComponent"}),
-        .type = {.size = sizeof(NexusRenderableComponent), .alignment = 8}
-    });
-
-    ecs_entity_t camera_id = ecs_component_init(world, &(ecs_component_desc_t){
-        .entity = ecs_entity(world, {.name = "NexusCameraComponent"}),
-        .type = {.size = sizeof(NexusCameraComponent), .alignment = 8}
-    });
-
-    ecs_entity_t light_id = ecs_component_init(world, &(ecs_component_desc_t){
-        .entity = ecs_entity(world, {.name = "NexusLightComponent"}),
-        .type = {.size = sizeof(NexusLightComponent), .alignment = 4}
-    });
-
-    ecs_entity_t velocity_id = ecs_component_init(world, &(ecs_component_desc_t){
-        .entity = ecs_entity(world, {.name = "NexusVelocityComponent"}),
-        .type = {.size = sizeof(NexusVelocityComponent), .alignment = 4}
-    });
-
-    ecs_entity_t rigidbody_id = ecs_component_init(world, &(ecs_component_desc_t){
-        .entity = ecs_entity(world, {.name = "NexusRigidBodyComponent"}),
-        .type = {.size = sizeof(NexusRigidBodyComponent), .alignment = 4}
-    });
-
-    ecs_entity_t audiosource_id = ecs_component_init(world, &(ecs_component_desc_t){
-        .entity = ecs_entity(world, {.name = "NexusAudioSourceComponent"}),
-        .type = {.size = sizeof(NexusAudioSourceComponent), .alignment = 4}
-    });
+    /* Register components using flecs macros */
+    ECS_COMPONENT_DEFINE(world, NexusPositionComponent);
+    ECS_COMPONENT_DEFINE(world, NexusRotationComponent);
+    ECS_COMPONENT_DEFINE(world, NexusScaleComponent);
+    ECS_COMPONENT_DEFINE(world, NexusTransformComponent);
+    ECS_COMPONENT_DEFINE(world, NexusRenderableComponent);
+    ECS_COMPONENT_DEFINE(world, NexusCameraComponent);
+    ECS_COMPONENT_DEFINE(world, NexusLightComponent);
+    ECS_COMPONENT_DEFINE(world, NexusVelocityComponent);
+    ECS_COMPONENT_DEFINE(world, NexusRigidBodyComponent);
+    ECS_COMPONENT_DEFINE(world, NexusAudioSourceComponent);
 
     /* Register tags */
-    ecs_entity_t static_tag = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusStaticTag"
-    });
-
-    ecs_entity_t dynamic_tag = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusDynamicTag"
-    });
-
-    ecs_entity_t maincamera_tag = ecs_entity_init(world, &(ecs_entity_desc_t){
-        .name = "NexusMainCameraTag"
-    });
+    // ECS_TAG_DEFINE(world, NexusStaticTag);
+    // ECS_TAG_DEFINE(world, NexusDynamicTag);
+    // ECS_TAG_DEFINE(world, NexusMainCameraTag);
 
     printf("Successfully registered ECS components\n");
 }

@@ -49,21 +49,21 @@ typedef struct {
     float density;        /* Density kg/m^3 */
 } NexusPhysicsMaterial;
 
-// /**
-//  * Physics system configuration
-//  */
-// typedef struct {
-//     vec3 gravity;          /* Gravity vector */
-//     float fixed_timestep;  /* Fixed timestep for physics simulation */
-//     int max_substeps;      /* Maximum number of physics substeps per frame */
-//     bool debug_draw;       /* Debug drawing flag */
-// } NexusPhysicsConfig;
+/**
+ * Physics system extended configuration
+ */
+typedef struct {
+    vec3 gravity;          /* Gravity vector */
+    float fixed_timestep;  /* Fixed timestep for physics simulation */
+    int max_substeps;      /* Maximum number of physics substeps per frame */
+    bool debug_draw;       /* Debug drawing flag */
+} NexusPhysicsExConfig;
 
 /**
  * Main physics system structure
  */
 typedef struct NexusPhysics {
-    NexusPhysicsConfig config;    /* Physics configuration */
+    NexusPhysicsExConfig config;    /* Physics extended configuration */
     float accumulated_time;        /* Accumulated simulation time */
     ecs_world_t* world;            /* ECS world reference */
     bool paused;                   /* Physics paused flag */

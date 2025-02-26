@@ -106,21 +106,24 @@ bool create_scene(void) {
     /* Set as main camera */
     nexus_renderer_set_camera(renderer, camera);
     
-    /* Create a camera entity */
+    /* Create entities */
     ecs_entity_t camera_entity = ecs_new(world);
-    
-    /* Add camera components */
-    ecs_set(world, camera_entity, NexusPositionComponent, {{0.0f, 0.0f, 5.0f}});
-    ecs_set(world, camera_entity, NexusRotationComponent, {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 1.0f}});
-    ecs_set(world, camera_entity, NexusCameraComponent, {camera, true, true});
-    
-    /* Create a directional light */
     ecs_entity_t light_entity = ecs_new(world);
+    cube_entity = ecs_new(world);
     
-    /* Add light components */
-    ecs_set(world, light_entity, NexusPositionComponent, {{10.0f, 10.0f, 10.0f}});
-    ecs_set(world, light_entity, NexusRotationComponent, {{45.0f, 45.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 1.0f}});
-    ecs_set(world, light_entity, NexusLightComponent, {
+    /* Camera components */
+    NexusPositionComponent cam_pos = {{0.0f, 0.0f, 5.0f}};
+    NexusRotationComponent cam_rot = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 1.0f}};
+    NexusCameraComponent cam_comp = {camera, true, true};
+    
+    ecs_set_ptr(world, camera_entity, NexusPositionComponent, &cam_pos);
+    ecs_set_ptr(world, camera_entity, NexusRotationComponent, &cam_rot);
+    ecs_set_ptr(world, camera_entity, NexusCameraComponent, &cam_comp);
+    
+    /* Light components */
+    NexusPositionComponent light_pos = {{10.0f, 10.0f, 10.0f}};
+    NexusRotationComponent light_rot = {{45.0f, 45.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 1.0f}};
+    NexusLightComponent light_comp = {
         NEXUS_LIGHT_DIRECTIONAL,    /* Light type */
         {1.0f, 1.0f, 1.0f},         /* Color (white) */
         1.0f,                       /* Intensity */
@@ -129,33 +132,37 @@ bool create_scene(void) {
         0.0f,                       /* Spot softness (not used for directional) */
         true,                       /* Cast shadows */
         2048                        /* Shadow resolution */
-    });
+    };
     
-    /* Create the cube entity */
-    cube_entity = ecs_new(world);
+    ecs_set_ptr(world, light_entity, NexusPositionComponent, &light_pos);
+    ecs_set_ptr(world, light_entity, NexusRotationComponent, &light_rot);
+    ecs_set_ptr(world, light_entity, NexusLightComponent, &light_comp);
     
-    /* Add components to the cube */
-    ecs_set(world, cube_entity, NexusPositionComponent, {{0.0f, 0.0f, 0.0f}});
-    ecs_set(world, cube_entity, NexusRotationComponent, {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 1.0f}});
-    ecs_set(world, cube_entity, NexusScaleComponent, {{1.0f, 1.0f, 1.0f}});
-    ecs_set(world, cube_entity, NexusTransformComponent, {{0}, {0}, true});
-    ecs_set(world, cube_entity, NexusRenderableComponent, {
+    /* Cube components */
+    NexusPositionComponent cube_pos = {{0.0f, 0.0f, 0.0f}};
+    NexusRotationComponent cube_rot = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 1.0f}};
+    NexusScaleComponent cube_scale = {{1.0f, 1.0f, 1.0f}};
+    NexusTransformComponent cube_transform = {{0}, {0}, true};
+    NexusRenderableComponent cube_renderable = {
         cube_mesh,   /* Mesh */
         material,    /* Material */
         true,        /* Visible */
         true,        /* Cast shadows */
         true         /* Receive shadows */
-    });
+    };
     
-    /* Create a custom system for rotating the cube */
-    ecs_system(world, {
-        .entity = ecs_entity(world, {.name = "CubeRotationSystem"}),
-        .query.filter.terms = {
-            { .id = ecs_id(NexusRotationComponent), .inout = EcsInOut }
-        },
-        .callback = cube_update_system,
-        .interval = 0 /* Run every frame */
-    });
+    ecs_set_ptr(world, cube_entity, NexusPositionComponent, &cube_pos);
+    ecs_set_ptr(world, cube_entity, NexusRotationComponent, &cube_rot);
+    ecs_set_ptr(world, cube_entity, NexusScaleComponent, &cube_scale);
+    ecs_set_ptr(world, cube_entity, NexusTransformComponent, &cube_transform);
+    ecs_set_ptr(world, cube_entity, NexusRenderableComponent, &cube_renderable);
+    
+    /* Create a custom system for rotating the cube - simpler approach */
+    ecs_entity_t sys = ecs_new_system(world, 
+                                      "CubeRotationSystem",  
+                                      EcsOnUpdate,
+                                      "NexusRotationComponent", 
+                                      cube_update_system);
     
     return true;
 }

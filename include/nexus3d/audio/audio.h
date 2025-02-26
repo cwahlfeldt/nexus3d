@@ -83,7 +83,7 @@ typedef struct NexusAudio {
 /* Audio system functions */
 NexusAudio* nexus_audio_create(const NexusAudioConfig* config);
 void nexus_audio_destroy(NexusAudio* audio);
-void nexus_audio_update(NexusAudio* audio);
+void nexus_audio_update(NexusAudio* audio, float dt);
 void nexus_audio_pause(NexusAudio* audio, bool pause);
 bool nexus_audio_is_paused(const NexusAudio* audio);
 void nexus_audio_set_master_volume(NexusAudio* audio, float volume);
